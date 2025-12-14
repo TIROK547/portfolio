@@ -1,0 +1,172 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import AsciiArt from './AsciiArt';
+import { useTypingSound } from './TypingSound';
+
+interface HeroProps {
+  translations: any;
+}
+
+export default function Hero({ translations }: HeroProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [typingComplete, setTypingComplete] = useState(false);
+  const { playTypingSound } = useTypingSound();
+
+  useEffect(() => {
+    setIsVisible(true);
+
+    // Play typing sounds during the reveal animation
+    const soundInterval = setInterval(() => {
+      playTypingSound();
+    }, 100);
+
+    const timer = setTimeout(() => {
+      setTypingComplete(true);
+      clearInterval(soundInterval);
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(soundInterval);
+    };
+  }, [playTypingSound]);
+
+  const birthDate = new Date('2006-11-14');
+  const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+
+  const systemInfo = [
+    { label: translations.hero.user, value: 'alireza@ghotbi', color: 'text-terminal-text-light dark:text-terminal-text-dark', separator: true },
+    { label: translations.hero.alias, value: 'tirok', color: 'text-terminal-text-light dark:text-terminal-text-dark' },
+    { label: translations.hero.role, value: translations.home.role, color: 'text-terminal-text-light dark:text-terminal-text-dark' },
+    { label: translations.hero.location, value: 'Tehran, Iran', color: 'text-terminal-text-light dark:text-terminal-text-dark' },
+    { label: translations.hero.age, value: `${age} years`, color: 'text-terminal-text-light dark:text-terminal-text-dark' },
+    { label: translations.hero.shell, value: '/bin/zsh', color: 'text-terminal-text-light dark:text-terminal-text-dark' },
+  ];
+
+  const stackInfo = [
+    { category: translations.stack.frontend, items: ['Next.js', 'React', 'TypeScript', 'Tailwind'] },
+    { category: translations.stack.backend, items: ['Django', 'PostgreSQL', 'Redis', 'Celery'] },
+    { category: translations.stack.devops, items: ['Docker', 'Nginx', 'Arch Linux'] },
+  ];
+
+  return (
+    <section className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4">
+      <div
+        className={`w-full max-w-6xl transition-opacity duration-1000 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        {/* Terminal Header */}
+        <div className="mb-4">
+          <span className="text-terminal-accent-red text-sm">$</span>
+          <span className="text-terminal-accent-green text-sm ml-2">neofetch</span>
+          <span className="text-terminal-text-light dark:text-terminal-text-dark text-sm"> --config </span>
+          <span className="text-terminal-accent-blue text-sm">~/.config/neofetch/tirok.conf</span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-8 lg:gap-12">
+          {/* ASCII Art */}
+          <div className="flex justify-center lg:justify-start">
+            <div className="bg-gradient-to-r from-terminal-accent-blue via-terminal-accent-purple to-terminal-accent-magenta bg-clip-text text-transparent">
+              <AsciiArt />
+            </div>
+          </div>
+
+          {/* System Info */}
+          <div className="space-y-2 text-sm font-mono">
+            {systemInfo.map((info, index) => (
+              <div key={index}>
+                {info.separator && index > 0 && (
+                  <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 my-3" />
+                )}
+                <div
+                  className="flex flex-wrap gap-2 transition-all duration-500"
+                  style={{
+                    transitionDelay: `${index * 100}ms`,
+                    opacity: isVisible ? 1 : 0,
+                    transform: isVisible ? 'translateX(0)' : 'translateX(-20px)',
+                  }}
+                >
+                  <span className="text-terminal-accent-cyan font-semibold min-w-[100px]">
+                    {info.label}
+                  </span>
+                  <span className="text-terminal-accent-yellow">{info.value}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* Stack Section */}
+            <div className="pt-4">
+              <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-3" />
+              <div
+                className="transition-all duration-500"
+                style={{
+                  transitionDelay: `${systemInfo.length * 100}ms`,
+                  opacity: isVisible ? 1 : 0,
+                  transform: isVisible ? 'translateX(0)' : 'translateX(-20px)',
+                }}
+              >
+                <div className="flex gap-2 mb-2">
+                  <span className="text-terminal-accent-cyan font-semibold min-w-[100px]">
+                    {translations.hero.stack}
+                  </span>
+                  <div className="flex-1 space-y-1">
+                    {stackInfo.map((stack, idx) => (
+                      <div key={idx} className="flex gap-2 flex-wrap">
+                        <span className={`text-xs ${
+                          idx === 0 ? 'text-terminal-accent-green' :
+                          idx === 1 ? 'text-terminal-accent-blue' :
+                          'text-terminal-accent-orange'
+                        }`}>
+                          [{stack.category}]
+                        </span>
+                        <span className="text-terminal-accent-yellow">
+                          {stack.items.join(' • ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Color Blocks */}
+            <div className="pt-4">
+              <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-3" />
+              <div className="flex gap-3">
+                {[
+                  { char: '●', color: 'text-terminal-accent-blue' },
+                  { char: '●', color: 'text-terminal-accent-magenta' },
+                  { char: '●', color: 'text-terminal-accent-cyan' },
+                  { char: '●', color: 'text-terminal-accent-green' },
+                  { char: '●', color: 'text-terminal-accent-yellow' },
+                  { char: '●', color: 'text-terminal-accent-orange' },
+                ].map((item, i) => (
+                  <span
+                    key={i}
+                    className={`${item.color} text-2xl transition-all duration-300`}
+                    style={{
+                      transitionDelay: `${(systemInfo.length + stackInfo.length + i) * 100}ms`,
+                      opacity: isVisible ? 1 : 0,
+                    }}
+                  >
+                    {item.char}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Blinking cursor */}
+            <div className="pt-3">
+              <span className="text-terminal-text-light dark:text-terminal-text-dark">
+                <span className="text-terminal-accent-red">$</span>{' '}
+                {typingComplete && <span className="animate-pulse">▋</span>}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
