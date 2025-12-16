@@ -9,6 +9,7 @@ export default function CursorGlass() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isClicked, setIsClicked] = useState(false);
   const [cursorState, setCursorState] = useState<CursorState>('default');
+  const [isMobile, setIsMobile] = useState(false);
 
   const cursorImages = {
     default: '/cursors/aero_arrow_glow.cur',
@@ -17,6 +18,21 @@ export default function CursorGlass() {
   };
 
   useEffect(() => {
+    // Detect mobile devices
+    const checkMobile = () => {
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth < 768;
+      const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      setIsMobile(isTouchDevice || isSmallScreen || isMobileUA);
+    };
+
+    checkMobile();
+  }, []);
+
+  useEffect(() => {
+    // Don't run if mobile
+    if (isMobile) return;
     const updatePosition = (e: MouseEvent) => {
       setPosition({ x: e.clientX, y: e.clientY });
 
@@ -77,7 +93,10 @@ export default function CursorGlass() {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [isMobile]);
+
+  // Don't render custom cursor on mobile devices
+  if (isMobile) return null;
 
   return (
     <div

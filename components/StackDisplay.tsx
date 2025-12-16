@@ -1,10 +1,6 @@
 import TechIcon from './TechIcon';
 
-interface StackDisplayProps {
-  translations: any;
-}
-
-export default function StackDisplay({ translations }: StackDisplayProps) {
+export default function StackDisplay() {
   const stack = {
     frontend: ['Next.js', 'TypeScript', 'Tailwind CSS', 'React'],
     backend: ['Django', 'Django REST Framework', 'JWT Auth', 'PostgreSQL', 'Celery', 'Redis', 'RabbitMQ', 'Channels'],
@@ -26,14 +22,14 @@ export default function StackDisplay({ translations }: StackDisplayProps) {
 
           <div className="mt-4">
             <h2 className="text-xl sm:text-2xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-6">
-              <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">cat</span> <span className="text-terminal-accent-blue">{translations.stack.title}</span>
+              <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">cat</span> <span className="text-terminal-accent-blue">stack_overview</span>
             </h2>
 
             <div className="space-y-6 text-sm sm:text-base font-mono">
               {/* Frontend */}
               <div>
                 <div className="text-terminal-accent-blue font-semibold mb-2">
-                  [{translations.stack.frontend.toUpperCase()}]
+                  [FRONTEND]
                 </div>
                 <div className="pl-4 space-y-1">
                   {stack.frontend.map((tech, index) => (
@@ -49,7 +45,7 @@ export default function StackDisplay({ translations }: StackDisplayProps) {
               {/* Backend */}
               <div>
                 <div className="text-terminal-accent-blue font-semibold mb-2">
-                  [{translations.stack.backend.toUpperCase()}]
+                  [BACKEND]
                 </div>
                 <div className="pl-4 space-y-1">
                   {stack.backend.map((tech, index) => (
@@ -65,7 +61,7 @@ export default function StackDisplay({ translations }: StackDisplayProps) {
               {/* DevOps */}
               <div>
                 <div className="text-terminal-accent-blue font-semibold mb-2">
-                  [{translations.stack.devops.toUpperCase()}]
+                  [DEVOPS]
                 </div>
                 <div className="pl-4 space-y-1">
                   {stack.devops.map((tech, index) => (
@@ -81,7 +77,7 @@ export default function StackDisplay({ translations }: StackDisplayProps) {
               {/* Extras */}
               <div>
                 <div className="text-terminal-accent-blue font-semibold mb-2">
-                  [{translations.stack.extras.toUpperCase()}]
+                  [EXTRAS]
                 </div>
                 <div className="pl-4 space-y-1">
                   {stack.extras.map((tech, index) => (

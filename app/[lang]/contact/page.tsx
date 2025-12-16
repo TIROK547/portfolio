@@ -1,30 +1,25 @@
-import { getTranslations, type Locale } from '@/lib/i18n';
-
-export default function ContactPage({ params }: { params: { lang: string } }) {
-  const locale = params.lang as Locale;
-  const t = getTranslations(locale);
-
+export default function ContactPage() {
   const contacts = [
     {
-      label: t.contact.email,
+      label: 'email',
       value: 'dev@tirok.ir',
       href: 'mailto:dev@tirok.ir',
       icon: '📧',
     },
     {
-      label: t.contact.telegram,
+      label: 'telegram',
       value: '@xyaes',
       href: 'https://t.me/xyaes',
       icon: '✈',
     },
     {
-      label: t.contact.github,
+      label: 'github',
       value: 'tirok547',
       href: 'https://github.com/tirok547',
       icon: '🔗',
     },
     {
-      label: t.contact.linkedin,
+      label: 'linkedin',
       value: 'Coming soon...',
       href: '#',
       icon: '💼',
@@ -32,19 +27,19 @@ export default function ContactPage({ params }: { params: { lang: string } }) {
   ];
 
   return (
-    <div className="min-h-screen py-12 px-4">
+    <div className="min-h-screen py-8 sm:py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-3xl sm:text-4xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">
-            <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">cat</span> <span className="text-terminal-accent-blue">{t.contact.title}.conf</span>
+        <div className="mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">
+            <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">cat</span> <span className="text-terminal-accent-blue">contact.conf</span>
           </h1>
           <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20" />
         </div>
 
         {/* Intro */}
-        <div className="mb-12">
-          <div className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-6 terminal-window">
+        <div className="mb-8 sm:mb-12">
+          <div className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-4 sm:p-6 terminal-window">
             <div className="absolute top-0 left-0 right-0 h-6 border-b border-terminal-text-light/20 dark:border-terminal-text-dark/20 flex items-center px-2 gap-2">
               <span className="text-xs text-terminal-accent-pink">●</span>
               <span className="text-xs text-terminal-accent-cyan">●</span>
@@ -64,7 +59,7 @@ export default function ContactPage({ params }: { params: { lang: string } }) {
         </div>
 
         {/* Contact Methods */}
-        <div className="space-y-4 mb-12">
+        <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-12">
           {contacts.map((contact, index) => (
             <div
               key={index}

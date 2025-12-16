@@ -17,14 +17,13 @@ export default function Header({ locale, translations }: HeaderProps) {
   const pathname = usePathname();
   const { theme, toggleTheme, mounted } = useTheme();
 
-  const otherLocale = locale === 'en' ? 'fa' : 'en';
   const currentPath = pathname.replace(`/${locale}`, '');
 
   const navItems = [
-    { name: translations.nav.home, path: '' },
-    { name: translations.nav.about, path: '/about' },
-    { name: translations.nav.projects, path: '/projects' },
-    { name: translations.nav.contact, path: '/contact' },
+    { name: 'home', path: '' },
+    { name: 'about', path: '/about' },
+    { name: 'projects', path: '/projects' },
+    { name: 'contact', path: '/contact' },
   ];
 
   const isActive = (path: string) => {
@@ -56,14 +55,6 @@ export default function Header({ locale, translations }: HeaderProps) {
                 [{mounted ? (theme === 'dark' ? '☀' : '☾') : '○'}]
               </button>
 
-              {/* Language Toggle */}
-              <Link
-                href={`/${otherLocale}${currentPath}`}
-                className="px-3 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan dark:hover:border-terminal-accent-cyan transition-colors text-sm"
-              >
-                [{otherLocale.toUpperCase()}]
-              </Link>
-
               {/* Info Card Button */}
               <button
                 onClick={() => setIsInfoCardOpen(true)}
@@ -91,13 +82,6 @@ export default function Header({ locale, translations }: HeaderProps) {
               >
                 [{mounted ? (theme === 'dark' ? '☀' : '☾') : '○'}]
               </button>
-
-              <Link
-                href={`/${otherLocale}${currentPath}`}
-                className="px-2 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-xs"
-              >
-                [{otherLocale.toUpperCase()}]
-              </Link>
 
               <button
                 onClick={() => setIsInfoCardOpen(true)}
@@ -150,7 +134,7 @@ export default function Header({ locale, translations }: HeaderProps) {
           onClick={() => setIsInfoCardOpen(false)}
         >
           <div
-            className="bg-terminal-bg-light dark:bg-terminal-bg-dark border-2 border-terminal-text-light dark:border-terminal-text-dark max-w-2xl w-full p-6 relative terminal-window"
+            className="bg-terminal-bg-light dark:bg-terminal-bg-dark border-2 border-terminal-text-light dark:border-terminal-text-dark max-w-2xl w-full p-4 sm:p-6 relative terminal-window max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Window Title Bar */}
@@ -168,10 +152,10 @@ export default function Header({ locale, translations }: HeaderProps) {
               ×
             </button>
 
-            <div className="mt-6 flex flex-col md:flex-row gap-6">
+            <div className="mt-6 flex flex-col md:flex-row gap-4 md:gap-6">
               {/* Profile Picture */}
-              <div className="flex-shrink-0">
-                <div className="w-40 h-40 border-2 border-terminal-text-light dark:border-terminal-text-dark overflow-hidden">
+              <div className="flex-shrink-0 mx-auto md:mx-0">
+                <div className="w-32 h-32 sm:w-40 sm:h-40 border-2 border-terminal-text-light dark:border-terminal-text-dark overflow-hidden">
                   <img
                     src="/images/profile.jpg"
                     alt="Alireza Ghotbi"
@@ -181,7 +165,7 @@ export default function Header({ locale, translations }: HeaderProps) {
               </div>
 
               {/* Info */}
-              <div className="flex-1 space-y-3 text-sm">
+              <div className="flex-1 space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
                   <span className="text-terminal-text-dark">name</span> ={' '}
@@ -204,7 +188,7 @@ export default function Header({ locale, translations }: HeaderProps) {
                 </div>
                 <div className="pt-2 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
                   <p className="text-terminal-text-light dark:text-terminal-text-dark/80 leading-relaxed">
-                    {translations.about.bio.split('\n\n')[0]}
+                    I'm a 19-year-old full-stack developer from Iran. I build web applications with a focus on clean architecture and modern technologies.
                   </p>
                 </div>
               </div>

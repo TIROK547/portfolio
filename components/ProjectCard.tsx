@@ -10,10 +10,9 @@ interface Project {
 
 interface ProjectCardProps {
   project: Project;
-  translations: any;
 }
 
-export default function ProjectCard({ project, translations }: ProjectCardProps) {
+export default function ProjectCard({ project }: ProjectCardProps) {
   const statusColors = {
     active: 'text-terminal-text-dark',
     archived: 'text-terminal-accent-cyan',
@@ -44,7 +43,7 @@ export default function ProjectCard({ project, translations }: ProjectCardProps)
       </p>
 
       <div className="mb-4">
-        <div className="text-xs text-terminal-accent-cyan mb-2">{translations.projects.stack}:</div>
+        <div className="text-xs text-terminal-accent-cyan mb-2">stack:</div>
         <div className="flex flex-wrap gap-2">
           {project.stack.map((tech, index) => (
             <span
@@ -65,7 +64,7 @@ export default function ProjectCard({ project, translations }: ProjectCardProps)
         className="inline-flex items-center gap-2 text-sm text-terminal-text-light dark:text-terminal-text-dark hover:text-terminal-accent-cyan dark:hover:text-terminal-accent-cyan transition-colors"
       >
         <span className="text-terminal-accent-red">→</span>
-        {translations.projects.viewGithub}
+        view on github
       </a>
     </div>
   );
