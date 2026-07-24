@@ -1,21 +1,20 @@
-import TechIcon from '@/components/TechIcon';
+import TechIcon from "@/components/TechIcon";
 
 export default function AboutPage() {
-
   const skills = {
-    languages: ['JavaScript', 'TypeScript', 'Python', 'Bash'],
-    frameworks: ['Next.js', 'React', 'Django', 'Django REST Framework'],
-    databases: ['PostgreSQL', 'Redis', 'RabbitMQ'],
-    tools: ['Docker', 'Git', 'Nginx', 'Linux'],
+    languages: ["JavaScript", "TypeScript", "Python", "Bash"],
+    frameworks: ["Next.js", "React", "Django", "Django REST Framework"],
+    databases: ["PostgreSQL", "Redis", "RabbitMQ"],
+    tools: ["Docker", "Git", "Nginx", "Linux"],
   };
 
   const interests = [
-    'Backend Architecture',
-    'System Design',
-    'Performance Optimization',
-    'Open Source',
-    'Linux & CLI Tools',
-    'Automation',
+    "Backend Architecture",
+    "System Design",
+    "Performance Optimization",
+    "Open Source",
+    "Linux & CLI Tools",
+    "Automation",
   ];
 
   return (
@@ -24,7 +23,9 @@ export default function AboutPage() {
         {/* Header */}
         <div className="mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">
-            <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">cat</span> <span className="text-terminal-accent-blue">about_me.md</span>
+            <span className="text-terminal-accent-red">$</span>{" "}
+            <span className="text-terminal-accent-green">cat</span>{" "}
+            <span className="text-terminal-accent-blue">about_me.md</span>
           </h1>
           <div className="h-px bg-terminal-text-light/20 dark:border-terminal-text-dark/20" />
         </div>
@@ -41,24 +42,28 @@ export default function AboutPage() {
             </div>
             <div className="md:col-span-2 space-y-3 text-sm">
               <div>
-                <span className="text-terminal-accent-cyan">name:</span>{' '}
-                <span className="text-terminal-accent-yellow">Alireza Ghotbi</span>
+                <span className="text-terminal-accent-cyan">name:</span>{" "}
+                <span className="text-terminal-accent-yellow">
+                  Alireza Ghotbi
+                </span>
               </div>
               <div>
-                <span className="text-terminal-accent-cyan">alias:</span>{' '}
+                <span className="text-terminal-accent-cyan">alias:</span>{" "}
                 <span className="text-terminal-accent-yellow">tirok</span>
               </div>
               <div>
-                <span className="text-terminal-accent-cyan">age:</span>{' '}
+                <span className="text-terminal-accent-cyan">age:</span>{" "}
                 <span className="text-terminal-accent-yellow">19</span>
               </div>
               <div>
-                <span className="text-terminal-accent-cyan">location:</span>{' '}
+                <span className="text-terminal-accent-cyan">location:</span>{" "}
                 <span className="text-terminal-accent-yellow">Iran</span>
               </div>
               <div>
-                <span className="text-terminal-accent-cyan">role:</span>{' '}
-                <span className="text-terminal-accent-yellow">Junior Full Stack Web Developer</span>
+                <span className="text-terminal-accent-cyan">role:</span>{" "}
+                <span className="text-terminal-accent-yellow">
+                  Junior Full Stack Web Developer
+                </span>
               </div>
             </div>
           </div>
@@ -70,8 +75,19 @@ export default function AboutPage() {
             <span className="text-terminal-accent-red">#</span> Bio
           </h2>
           <div className="space-y-4 text-terminal-text-light/80 dark:text-terminal-text-dark/80 leading-relaxed">
-            <p>I'm Alireza Ghotbi, a 19-year-old full-stack developer from Iran. I build web applications with a focus on clean architecture and modern technologies. My journey in programming started with curiosity and evolved into a passion for creating efficient, scalable solutions.</p>
-            <p>I specialize in backend development with Django and frontend with Next.js, but I enjoy working across the entire stack. When I'm not coding, I'm probably exploring new technologies or optimizing my Arch Linux setup.</p>
+            <p>
+              I'm Alireza Ghotbi, a 19-year-old full-stack developer from Iran.
+              I build web applications with a focus on clean architecture and
+              modern technologies. My journey in programming started with
+              curiosity and evolved into a passion for creating efficient,
+              scalable solutions.
+            </p>
+            <p>
+              I specialize in backend development with Django and frontend with
+              Next.js, but I enjoy working across the entire stack. When I'm not
+              coding, I'm probably exploring new technologies or optimizing my
+              Arch Linux setup.
+            </p>
           </div>
         </div>
 
@@ -107,7 +123,8 @@ export default function AboutPage() {
         {/* Interests */}
         <div className="mb-8 sm:mb-12">
           <h2 className="text-lg sm:text-xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-3 sm:mb-4">
-            <span className="text-terminal-accent-red">#</span> Interests & Focus Areas
+            <span className="text-terminal-accent-red">#</span> Interests &
+            Focus Areas
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {interests.map((interest, index) => (
@@ -115,8 +132,10 @@ export default function AboutPage() {
                 key={index}
                 className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-3 text-sm"
               >
-                <span className="text-terminal-accent-pink">→</span>{' '}
-                <span className="text-terminal-text-light dark:text-terminal-text-dark">{interest}</span>
+                <span className="text-terminal-accent-pink">→</span>{" "}
+                <span className="text-terminal-text-light dark:text-terminal-text-dark">
+                  {interest}
+                </span>
               </div>
             ))}
           </div>
@@ -134,7 +153,7 @@ export default function AboutPage() {
                   Download my full resume in PDF format
                 </p>
                 <p className="text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60">
-                  Last updated: October 2025
+                  Last updated: July 2026
                 </p>
               </div>
               <a
@@ -152,7 +171,8 @@ export default function AboutPage() {
         {/* Footer note */}
         <div className="border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20 pt-6">
           <p className="text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60">
-            <span className="text-terminal-accent-red">$</span> Always learning, always building.
+            <span className="text-terminal-accent-red">$</span> Always learning,
+            always building.
           </p>
         </div>
       </div>
