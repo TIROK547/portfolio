@@ -55,8 +55,6 @@ export default function TechIcon({ name, size = 16 }: TechIconProps) {
       className="inline-block"
       style={{
         imageRendering: 'pixelated',
-        imageRendering: '-moz-crisp-edges' as any,
-        imageRendering: 'crisp-edges' as any,
       }}
     />
   );
