@@ -23,12 +23,13 @@ export default function Header({ locale, translations }: HeaderProps) {
     { name: 'home', path: '' },
     { name: 'about', path: '/about' },
     { name: 'projects', path: '/projects' },
+    { name: 'blog', path: '/blog' },
     { name: 'contact', path: '/contact' },
   ];
 
   const isActive = (path: string) => {
     const fullPath = `/${locale}${path}`;
-    return pathname === fullPath;
+    return pathname === fullPath || (path !== '' && pathname.startsWith(`${fullPath}/`));
   };
 
   return (

@@ -1,0 +1,14 @@
+services:
+  portfolio:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+    ports:
+      - "127.0.0.1:3000:3000"   # nginx / cloudflared talks to this
+    volumes:
+      - portfolio-data:/data     # site.db + uploads/
+
+volumes:
+  portfolio-data:

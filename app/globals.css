@@ -236,3 +236,39 @@ a, button, [role="button"], input, textarea {
 ::-webkit-scrollbar-thumb:hover {
   opacity: 0.5;
 }
+
+/* ---- Blog editor (blogs.tirok.ir) ---- */
+@layer components {
+  .adm-input {
+    @apply w-full bg-black/20 border border-terminal-text-dark/20 px-3 py-2 text-sm text-terminal-text-dark placeholder:text-terminal-text-dark/30 focus:outline-none focus:border-terminal-accent-cyan;
+  }
+  .adm-label {
+    @apply block text-xs text-terminal-accent-cyan mb-1;
+  }
+  .adm-btn {
+    @apply px-3 py-1.5 text-sm border border-terminal-text-dark/30 text-terminal-text-dark hover:border-terminal-accent-cyan hover:text-terminal-accent-cyan transition-colors disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .adm-btn-primary {
+    @apply border-terminal-accent-green text-terminal-accent-green hover:bg-terminal-accent-green/10 hover:border-terminal-accent-green hover:text-terminal-accent-green;
+  }
+  .adm-btn-danger {
+    @apply border-terminal-accent-red/60 text-terminal-accent-red hover:border-terminal-accent-red hover:text-terminal-accent-red;
+  }
+}
+
+/* The portfolio hides the system cursor for its custom one; the editor should not. */
+.admin-root,
+.admin-root * {
+  cursor: auto !important;
+}
+.admin-root a,
+.admin-root button,
+.admin-root select,
+.admin-root label[for],
+.admin-root input[type='file'] {
+  cursor: pointer !important;
+}
+.admin-root input,
+.admin-root textarea {
+  cursor: text !important;
+}

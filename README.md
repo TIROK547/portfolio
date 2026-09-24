@@ -293,6 +293,8 @@ Authentic retro terminal feel with:
 
 ## Deployment
 
+> The blog/editor stores data in SQLite on disk, so deploy on something with a persistent disk (your VPS + Docker). Vercel/Netlify serverless hosting won't keep the database or uploads. See "Blog, editor and backend" below.
+
 ### Vercel (Recommended)
 
 ```bash
@@ -328,7 +330,7 @@ CMD ["npm", "start"]
 
 ## Environment Variables
 
-Currently, this portfolio doesn't require any environment variables. If you add features that need them (analytics, contact forms, etc.), create a `.env.local` file:
+The blog backend needs `SESSION_SECRET`, `ADMIN_USER` and `ADMIN_PASSWORD_HASH` (see `.env.example`). Other optional variables, e.g. analytics, go in `.env.local`:
 
 ```bash
 # Example
@@ -338,7 +340,8 @@ NEXT_PUBLIC_SITE_URL=https://yourdomain.com
 
 ## Roadmap
 
-- [ ] Blog section with MDX support
+- [x] Blog section (Markdown, SQLite, private editor)
+- [x] Projects managed from the editor (SQLite)
 - [ ] Project detail pages with screenshots
 - [ ] Contact form with backend integration
 - [ ] Analytics integration
@@ -386,3 +389,49 @@ Feel free to use this as inspiration for your own portfolio, but please don't di
 Built with ❤️ and ⌨️ by tirok
 
 **Tech Stack**: Next.js 15 • TypeScript • Tailwind CSS • React 18
+
+## Blog, editor and backend
+
+One Next.js app serves two hostnames and stores everything in a single SQLite file.
+
+| Host | What it is |
+| --- | --- |
+| `portfolio.tirok.ir` | public site: `/en/blog`, `/en/blog/<slug>`, latest posts on the home page, projects from the DB |
+| `blogs.tirok.ir` | private editor (login required): posts, drafts, categories, `#tags`, image upload, projects |
+
+- Data: `DATA_DIR/site.db` (posts, categories, tags, projects) and `DATA_DIR/uploads/` (images). Back up both.
+- Posts are Markdown (headers, lists, code, tables, images). Raw HTML is sanitized.
+- Projects are seeded once from `lib/seed-projects.ts`; after that they're edited from the editor.
+- Auth: single admin, scrypt password hash, signed httpOnly cookie, login rate limit, same-origin check on every write.
+- Any host starting with `blogs.` is the editor, so locally use `http://blogs.localhost:3000`.
+
+### Setup
+
+```bash
+npm install
+node scripts/hash-password.mjs      # prints SESSION_SECRET + ADMIN_PASSWORD_HASH
+cp .env.example .env                # paste them in, set ADMIN_USER
+# dev over http: add INSECURE_COOKIES=1 to .env
+npm run dev                         # http://localhost:3000 and http://blogs.localhost:3000
+```
+
+Production with Docker: `docker compose up -d --build`. The app listens on `127.0.0.1:3000`.
+
+### Reverse proxy
+
+Both hostnames go to the same upstream. Keep the `Host` header and pass the client IP (used for the login rate limit):
+
+```nginx
+server {
+    server_name portfolio.tirok.ir blogs.tirok.ir;
+    client_max_body_size 10m;              # image uploads are capped at 8 MB
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+(TLS via certbot as usual. With Cloudflare Tunnel, point both hostnames at `http://localhost:3000`; the original Host is preserved.)

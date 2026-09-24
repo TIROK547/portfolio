@@ -1,72 +1,10 @@
 import ProjectCard from '@/components/ProjectCard';
+import { listProjects } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 export default function ProjectsPage() {
-const projects = [
-{
-    name: 'Coxy',
-    description: 'Scrapes, tests, and ranks VPN configs (VLESS / VMess / Trojan) and MTProto proxies collected from public Telegram channels. coxy pulls raw links from Telegram, speed-tests them, and produces a clean, ranked list of the fastest working configs and proxies — ready to publish or import into a client.',
-    stack: ['Python', 'Bash'],
-    github: 'https://github.com/TIROK547/coxy',
-    status: 'active' as const,
-  },
-{
-    name: 'TrendPulse',
-    description: 'Open-source social media trend heatmap platform. Built with Django 6 + DRF backend, PostgreSQL and Valkey for storage/caching, a Next.js frontend, and a planned Go middleware layer, developed with Docker Compose.',
-    stack: ['Django', 'Next.js', 'PostgreSQL', 'Valkey'],
-    github: 'https://github.com/TIROK547/TrendPulse',
-    status: 'wip' as const,
-  },
-{
-    name: 'TeleVisit24',
-    description: 'A telemedicine platform with Django REST Framework backend and Next.js frontend, deployed via Cloudflare Tunnel. Includes doctor profiles, appointment scheduling, real-time WebSocket chat (Django Channels), JWT auth, and AI-assisted booking with disease-prediction and emergency-detection microservices.',
-    stack: ['Django', 'Next.js', 'PostgreSQL', 'Redis'],
-    github: 'https://github.com/TIROK547/Televisit',
-    status: 'wip' as const,
-  },
-  {
-    name: 'Kelaasor Panel',
-    description: 'A Django backend for managing users, support tickets, and bootcamps. Features SMS-based phone verification, role-based access for technical and financial admins, a ticketing/messaging system, bootcamp join requests, and async task handling with Celery.',
-    stack: ['Django', 'Celery', 'Python'],
-    github: 'https://github.com/TIROK547/kelaasor-panel',
-    status: 'archived' as const,
-  },
-  {
-    name: 'OTP Go',
-    description: 'A Go backend service for OTP-based login and registration. Generates OTPs with Redis-backed expiry and rate limiting, issues JWTs on verification, persists users in PostgreSQL, and ships with a full OpenAPI spec and Docker Compose setup.',
-    stack: ['Go', 'PostgreSQL', 'Redis', 'Docker'],
-    github: 'https://github.com/TIROK547/otp-go',
-    status: 'active' as const,
-  },
-  {
-    name: 'LeetCode Solutions',
-    description: 'A running archive of LeetCode problem solutions, organized by difficulty (easy/medium/hard) and month. Tracks ongoing practice and problem-solving progress over time.',
-    stack: ['Algorithms', 'Data Structures'],
-    github: 'https://github.com/TIROK547/tirok-leetcode-solutions',
-    status: 'active' as const,
-  },
-    {
-    name: 'Os',
-    description: 'A Python-based minimal operating system simulation project. This project includes a custom filesystem structure, process handling logic, and foundational components that mimic basic OS behaviors. It demonstrates low-level programming skills and understanding of core operating system concepts through Python scripting and file modeling.',
-    stack: ['Python'],
-    github: 'https://github.com/TIROK547/Os',
-    status: 'wip' as const,
-  },
-  {
-    name: 'Telegram Study Bot',
-    description: 'A Telegram bot designed to assist with study tasks and organization. Built with Python, it includes bot integration with a database backend, command handling, and deployment scripts. Useful for automating schedule reminders, task tracking, and other personalized study workflows.',
-    stack: ['Python', 'Telegram Bot API'],
-    github: 'https://github.com/TIROK547/telegram-study-bot',
-    status: 'archived' as const,
-  },
-  {
-    name: 'Portfolio Website',
-    description: 'A retro terminal-inspired portfolio website showcasing projects and skills. Built with Next.js, TypeScript, React, and Tailwind CSS, the site features bilingual support, theme toggling, responsive design, and terminal CRT aesthetic effects. Designed to present your developer profile in a unique and interactive way.',
-    stack: ['Next.js', 'TypeScript', 'React', 'Tailwind CSS'],
-    github: 'https://github.com/TIROK547/portfolio',
-    status: 'active' as const,
-  },
-];
-
+  const projects = listProjects();
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
@@ -84,8 +22,8 @@ const projects = [
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-          {projects.map((project, index) => (
-            <ProjectCard key={index} project={project} />
+          {projects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
           ))}
         </div>
 
@@ -99,13 +37,6 @@ const projects = [
               Currently working on new features and documenting existing work.
             </p>
           </div>
-        </div>
-
-        {/* Instructions */}
-        <div className="mt-12 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20 pt-6">
-          <p className="text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60">
-            <span className="text-terminal-accent-red">$</span> To add more projects, edit this file and add new entries to the projects array.
-          </p>
         </div>
       </div>
     </div>
