@@ -10,155 +10,14 @@
   box-sizing: border-box;
 }
 
+html {
+  color-scheme: dark; /* native controls (select popups, scrollbars) render dark */
+}
+
 body {
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   position: relative;
   overflow-x: hidden;
-  cursor: none;
-}
-
-/* Custom cursor overlay */
-.cursor-overlay {
-  position: fixed;
-  pointer-events: none;
-  z-index: 10000;
-  transition: transform 0.1s ease-out;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-}
-
-/* Hide default cursor on all elements */
-a, button, [role="button"], input, textarea {
-  cursor: none !important;
-}
-
-/* CRT Effect Container */
-.crt {
-  position: relative;
-}
-
-/* Scanline Effect - Works in both light and dark mode */
-.crt::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0) 50%,
-    rgba(0, 0, 0, 0.25) 50%
-  );
-  background-size: 100% 4px;
-  z-index: 9999;
-  pointer-events: none;
-  animation: scanline 8s linear infinite;
-}
-
-/* Light mode scanlines - lighter effect */
-:root:not(.dark) .crt::before {
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0) 50%,
-    rgba(0, 0, 0, 0.08) 50%
-  );
-}
-
-/* CRT Flicker - More visible in dark mode with Everforest tint */
-.crt::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(127, 187, 179, 0.02);
-  opacity: 0;
-  z-index: 9998;
-  pointer-events: none;
-  animation: flicker 0.15s infinite;
-}
-
-/* Light mode flicker */
-:root:not(.dark) .crt::after {
-  background: rgba(167, 192, 128, 0.02);
-}
-
-@keyframes scanline {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100vh);
-  }
-}
-
-@keyframes flicker {
-  0% {
-    opacity: 0.27861;
-  }
-  5% {
-    opacity: 0.34769;
-  }
-  10% {
-    opacity: 0.23604;
-  }
-  15% {
-    opacity: 0.90626;
-  }
-  20% {
-    opacity: 0.18128;
-  }
-  25% {
-    opacity: 0.83891;
-  }
-  30% {
-    opacity: 0.65583;
-  }
-  35% {
-    opacity: 0.67807;
-  }
-  40% {
-    opacity: 0.26559;
-  }
-  45% {
-    opacity: 0.84693;
-  }
-  50% {
-    opacity: 0.96019;
-  }
-  55% {
-    opacity: 0.08594;
-  }
-  60% {
-    opacity: 0.20313;
-  }
-  65% {
-    opacity: 0.71988;
-  }
-  70% {
-    opacity: 0.53455;
-  }
-  75% {
-    opacity: 0.37288;
-  }
-  80% {
-    opacity: 0.71428;
-  }
-  85% {
-    opacity: 0.70419;
-  }
-  90% {
-    opacity: 0.7003;
-  }
-  95% {
-    opacity: 0.36108;
-  }
-  100% {
-    opacity: 0.24387;
-  }
 }
 
 /* Text glow effect for terminal text */
@@ -202,11 +61,6 @@ a, button, [role="button"], input, textarea {
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .crt::before,
-  .crt::after {
-    animation: none;
-  }
-
   .cursor-blink::after {
     animation: none;
     opacity: 1;
@@ -237,10 +91,13 @@ a, button, [role="button"], input, textarea {
   opacity: 0.5;
 }
 
-/* ---- Blog editor (blogs.tirok.ir) ---- */
+/* ---- Editor (admin.tirok.ir) ---- */
 @layer components {
   .adm-input {
     @apply w-full bg-black/20 border border-terminal-text-dark/20 px-3 py-2 text-sm text-terminal-text-dark placeholder:text-terminal-text-dark/30 focus:outline-none focus:border-terminal-accent-cyan;
+  }
+  .adm-input option {
+    @apply bg-terminal-bg-dark text-terminal-text-dark;
   }
   .adm-label {
     @apply block text-xs text-terminal-accent-cyan mb-1;
@@ -254,21 +111,4 @@ a, button, [role="button"], input, textarea {
   .adm-btn-danger {
     @apply border-terminal-accent-red/60 text-terminal-accent-red hover:border-terminal-accent-red hover:text-terminal-accent-red;
   }
-}
-
-/* The portfolio hides the system cursor for its custom one; the editor should not. */
-.admin-root,
-.admin-root * {
-  cursor: auto !important;
-}
-.admin-root a,
-.admin-root button,
-.admin-root select,
-.admin-root label[for],
-.admin-root input[type='file'] {
-  cursor: pointer !important;
-}
-.admin-root input,
-.admin-root textarea {
-  cursor: text !important;
 }

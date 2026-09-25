@@ -1,7 +1,8 @@
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+# --ignore-scripts: better-sqlite3 ships prebuilt binaries; without this npm tries to compile it (needs python/make/g++).
+RUN npm ci --ignore-scripts
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app

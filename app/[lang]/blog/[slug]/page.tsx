@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Markdown from '@/components/Markdown'
+import BackLink from '@/components/BackLink'
+import CommentSection from '@/components/CommentSection'
 import { getPostBySlug } from '@/lib/db'
 import { formatDate } from '@/lib/format'
 
@@ -43,12 +45,7 @@ export default async function PostPage({ params }: { params: Params }) {
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
       <article className="max-w-3xl mx-auto">
-        <Link
-          href={`/${lang}/blog`}
-          className="text-sm text-terminal-text-light/60 dark:text-terminal-text-dark/60 hover:text-terminal-accent-cyan transition-colors"
-        >
-          <span className="text-terminal-accent-magenta">←</span> cd ..
-        </Link>
+        <BackLink fallback={`/${lang}/blog`} />
 
         <header className="mt-6 mb-8">
           <h1 dir="auto" className="text-2xl sm:text-4xl font-bold leading-tight mb-4">
@@ -94,6 +91,8 @@ export default async function PostPage({ params }: { params: Params }) {
         <div className="text-sm sm:text-base">
           <Markdown>{post.content}</Markdown>
         </div>
+
+        <CommentSection postId={post.id} postSlug={post.slug} />
 
         <footer className="mt-12 pt-6 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
           <Link

@@ -1,5 +1,5 @@
 // Initial projects, copied from the old hard-coded projects page.
-// Only used to seed an empty database; after that, manage projects from blogs.tirok.ir.
+// Only used to seed an empty database; after that, manage projects from admin.tirok.ir.
 export interface SeedProject {
   name: string
   description: string

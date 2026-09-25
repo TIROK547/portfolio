@@ -1,34 +1,23 @@
-export default function ContactPage() {
+import BackLink from '@/components/BackLink';
+import { getSettings } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ContactPage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const { contact: c } = getSettings();
+
   const contacts = [
-    {
-      label: 'email',
-      value: 'dev@tirok.ir',
-      href: 'mailto:dev@tirok.ir',
-      icon: '📧',
-    },
-    {
-      label: 'telegram',
-      value: '@xyaes',
-      href: 'https://t.me/xyaes',
-      icon: '✈',
-    },
-    {
-      label: 'github',
-      value: 'tirok547',
-      href: 'https://github.com/tirok547',
-      icon: '🔗',
-    },
-    {
-      label: 'linkedin',
-      value: 'Coming soon...',
-      href: '#',
-      icon: '💼',
-    },
+    { label: 'email', value: c.email, href: `mailto:${c.email}`, icon: '📧' },
+    ...(c.telegram ? [{ label: 'telegram', value: `@${c.telegram}`, href: `https://t.me/${c.telegram}`, icon: '✈' }] : []),
+    ...(c.github ? [{ label: 'github', value: c.github, href: `https://github.com/${c.github}`, icon: '🔗' }] : []),
+    { label: 'linkedin', value: c.linkedin ? c.linkedin.replace(/^https:\/\/(www\.)?/, '') : 'Coming soon...', href: c.linkedin || '#', icon: '💼' },
   ];
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
       <div className="max-w-4xl mx-auto">
+        <BackLink fallback={`/${lang}`} className="inline-block mb-6" />
         {/* Header */}
         <div className="mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">
@@ -48,8 +37,7 @@ export default function ContactPage() {
             </div>
             <div className="mt-4 text-terminal-text-light/80 dark:text-terminal-text-dark/80">
               <p className="mb-4">
-                Thanks for checking out my portfolio! I'm always interested in discussing new projects,
-                collaborations, or just chatting about technology.
+                {c.intro}
               </p>
               <p className="text-sm">
                 Feel free to reach out through any of the channels below:
@@ -103,21 +91,21 @@ export default function ContactPage() {
               <span className="text-terminal-text-dark animate-pulse">●</span>
               <span className="text-terminal-accent-cyan">status:</span>
               <span className="text-terminal-accent-yellow">
-                Available for freelance work
+                {c.status}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-terminal-text-dark animate-pulse">●</span>
               <span className="text-terminal-accent-cyan">response_time:</span>
               <span className="text-terminal-accent-yellow">
-                Usually within 24 hours
+                {c.responseTime}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-terminal-text-dark animate-pulse">●</span>
               <span className="text-terminal-accent-cyan">timezone:</span>
               <span className="text-terminal-accent-yellow">
-                GMT+3:30 (Iran)
+                {c.timezone}
               </span>
             </div>
           </div>

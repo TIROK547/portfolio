@@ -22,3 +22,17 @@ export function recordLoginFailure(key: string): void {
 export function clearLoginFailures(key: string): void {
   attempts.delete(key)
 }
+
+// Sliding-window limiter for public endpoints (comments). Returns true when the caller is over the limit.
+const buckets = new Map<string, number[]>()
+export function rateLimited(key: string, max: number, windowMs: number): boolean {
+  const now = Date.now()
+  const hits = (buckets.get(key) ?? []).filter((t) => t > now - windowMs)
+  const limited = hits.length >= max
+  if (!limited) hits.push(now)
+  buckets.set(key, hits)
+  if (buckets.size > 2000) {
+    for (const [k, v] of buckets) if (!v.some((t) => t > now - windowMs)) buckets.delete(k)
+  }
+  return limited
+}

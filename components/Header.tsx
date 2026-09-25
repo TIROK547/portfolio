@@ -3,19 +3,27 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useTheme } from './ThemeProvider';
 import type { Locale } from '@/lib/i18n';
+
+export interface HeaderInfo {
+  name: string;
+  alias: string;
+  role: string;
+  location: string;
+  age: number;
+  summary: string;
+}
 
 interface HeaderProps {
   locale: Locale;
   translations: any;
+  info: HeaderInfo;
 }
 
-export default function Header({ locale, translations }: HeaderProps) {
+export default function Header({ locale, translations, info }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isInfoCardOpen, setIsInfoCardOpen] = useState(false);
   const pathname = usePathname();
-  const { theme, toggleTheme, mounted } = useTheme();
 
   const currentPath = pathname.replace(`/${locale}`, '');
 
@@ -47,14 +55,6 @@ export default function Header({ locale, translations }: HeaderProps) {
 
             {/* Desktop Controls */}
             <div className="hidden md:flex items-center gap-4">
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="px-3 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan dark:hover:border-terminal-accent-cyan transition-colors text-sm"
-                aria-label="Toggle theme"
-              >
-                [{mounted ? (theme === 'dark' ? '☀' : '☾') : '○'}]
-              </button>
 
               {/* Info Card Button */}
               <button
@@ -76,13 +76,6 @@ export default function Header({ locale, translations }: HeaderProps) {
 
             {/* Mobile Controls */}
             <div className="flex md:hidden items-center gap-2">
-              <button
-                onClick={toggleTheme}
-                className="px-2 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-xs"
-                aria-label="Toggle theme"
-              >
-                [{mounted ? (theme === 'dark' ? '☀' : '☾') : '○'}]
-              </button>
 
               <button
                 onClick={() => setIsInfoCardOpen(true)}
@@ -159,7 +152,7 @@ export default function Header({ locale, translations }: HeaderProps) {
                 <div className="w-32 h-32 sm:w-40 sm:h-40 border-2 border-terminal-text-light dark:border-terminal-text-dark overflow-hidden">
                   <img
                     src="/images/profile.jpg"
-                    alt="Alireza Ghotbi"
+                    alt={info.name}
                     className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all"
                   />
                 </div>
@@ -170,26 +163,26 @@ export default function Header({ locale, translations }: HeaderProps) {
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
                   <span className="text-terminal-text-dark">name</span> ={' '}
-                  <span className="text-terminal-accent-red">"Alireza Ghotbi (tirok)"</span>;
+                  <span className="text-terminal-accent-red">"{info.name} ({info.alias})"</span>;
                 </div>
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
                   <span className="text-terminal-text-dark">role</span> ={' '}
-                  <span className="text-terminal-accent-red">"Junior Full Stack Developer"</span>;
+                  <span className="text-terminal-accent-red">"{info.role}"</span>;
                 </div>
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
                   <span className="text-terminal-text-dark">age</span> ={' '}
-                  <span className="text-terminal-text-dark">19</span>;
+                  <span className="text-terminal-text-dark">{info.age}</span>;
                 </div>
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
                   <span className="text-terminal-text-dark">location</span> ={' '}
-                  <span className="text-terminal-accent-red">"Iran"</span>;
+                  <span className="text-terminal-accent-red">"{info.location}"</span>;
                 </div>
                 <div className="pt-2 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
                   <p className="text-terminal-text-light dark:text-terminal-text-dark/80 leading-relaxed">
-                    I'm a 19-year-old full-stack developer from Iran. I build web applications with a focus on clean architecture and modern technologies.
+                    {info.summary}
                   </p>
                 </div>
               </div>

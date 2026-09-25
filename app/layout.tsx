@@ -19,27 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                const theme = localStorage.getItem('theme');
-                // Default to dark mode
-                if (theme === 'light') {
-                  document.documentElement.classList.remove('dark');
-                } else {
-                  document.documentElement.classList.add('dark');
-                }
-              } catch (e) {
-                document.documentElement.classList.add('dark');
-              }
-            `,
-          }}
-        />
-      </head>
-      <body className="bg-terminal-bg-light dark:bg-terminal-bg-dark text-terminal-text-light dark:text-terminal-text-dark antialiased">
+    <html lang="en" className="dark">
+      <body className="bg-terminal-bg-dark text-terminal-text-dark antialiased">
         {children}
       </body>
     </html>

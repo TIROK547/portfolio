@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import PostCard from '@/components/PostCard'
+import BackLink from '@/components/BackLink'
 import { listCategories, listPosts, listTags } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -38,6 +39,7 @@ export default async function BlogPage({
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
       <div className="max-w-6xl mx-auto">
+        <BackLink fallback={`/${lang}`} className="inline-block mb-6" />
         <div className="mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
             <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">ls</span>{' '}

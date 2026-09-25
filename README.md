@@ -4,9 +4,8 @@ A retro terminal-inspired portfolio website with modern GUI structure, built wit
 
 ## Features
 
-- 🖥️ **Retro Terminal Aesthetic**: CRT effects, scanlines, and monospace fonts
-- 🌓 **Dark/Light Theme**: Persistent theme switching with localStorage
-- 🖱️ **Custom Windows 7 Cursor**: Purple glowing cursor pack (desktop only)
+- ✍️ **Blog & private editor**: Markdown posts, tags, categories, images and comments, managed from admin.tirok.ir
+- 🛠️ **Editable site info**: contact details, bio, stack and skills are stored in SQLite and edited from the admin panel
 - 📱 **Fully Responsive**: Mobile-optimized design with touch detection
 - 🎨 **Neofetch-Style Hero**: Custom ASCII art with system info display
 - 👥 **Visitor Counter**: Track total visitors (starts at 547)
@@ -24,9 +23,7 @@ A retro terminal-inspired portfolio website with modern GUI structure, built wit
 
 ### Styling
 - Custom Everforest-inspired terminal color scheme
-- CRT/scanline effects with CSS
 - JetBrains Mono font
-- Windows 7 Aero cursor pack
 - Responsive design with Tailwind breakpoints
 
 ## Getting Started
@@ -68,23 +65,21 @@ portfolio/
 │   │   ├── contact/         # Contact information
 │   │   ├── layout.tsx       # Page layout wrapper
 │   │   └── page.tsx         # Home page
-│   ├── globals.css          # Global styles & CRT effects
+│   ├── globals.css          # Global styles
 │   ├── layout.tsx           # Root layout
 │   └── not-found.tsx        # 404 page
 ├── components/
 │   ├── AsciiArt.tsx         # Terminal ASCII art
-│   ├── CursorGlass.tsx      # Custom Windows 7 cursor
+│   ├── BackLink.tsx         # "cd .." back link
 │   ├── Footer.tsx           # Footer with visitor counter
 │   ├── Header.tsx           # Header with navigation & info card
 │   ├── Hero.tsx             # Neofetch-style hero section
 │   ├── ProjectCard.tsx      # Project display component
 │   ├── StackDisplay.tsx     # Tech stack overview
-│   ├── TechIcon.tsx         # Technology icons
-│   └── ThemeProvider.tsx    # Dark/Light theme provider
+│   └── TechIcon.tsx         # Technology icons
 ├── lib/
 │   └── i18n.ts              # i18n configuration (legacy)
 ├── public/
-│   ├── cursors/             # Windows 7 cursor pack (.cur files)
 │   ├── images/
 │   │   └── profile.jpg      # Profile picture
 │   └── resume.pdf           # Downloadable resume
@@ -151,12 +146,10 @@ Update the terminal colors in `tailwind.config.ts`:
 colors: {
   terminal: {
     bg: {
-      dark: '#1e2326',  // Dark background (Everforest)
-      light: '#fdf6e3', // Light background (Solarized)
+      dark: '#1e2326',  // Background (Everforest)
     },
     text: {
-      dark: '#d3c6aa',  // Light text for dark mode
-      light: '#3c474d', // Dark text for light mode
+      dark: '#d3c6aa',  // Text
     },
     accent: {
       red: '#e67e80',
@@ -173,34 +166,6 @@ colors: {
   }
 }
 ```
-
-### Adjusting CRT Effects
-
-Modify the CRT effects in `app/globals.css`:
-
-```css
-/* Scanline effect */
-.crt::before {
-  /* Adjust opacity, animation speed, etc. */
-}
-
-/* Flicker effect */
-.crt::after {
-  /* Adjust intensity and timing */
-}
-```
-
-To disable CRT effects entirely, comment out or remove the `.crt::before` and `.crt::after` pseudo-elements.
-
-### Custom Cursor
-
-The Windows 7 purple glowing cursor pack is located in `public/cursors/`. The cursor:
-- Only displays on desktop/laptop devices
-- Automatically hides on mobile (touch devices)
-- Changes based on hover state (pointer, text input, etc.)
-- Can be customized in `components/CursorGlass.tsx`
-
-To disable the custom cursor, remove or comment out `<CursorGlass />` in `app/[lang]/layout.tsx`.
 
 ### Visitor Counter
 
@@ -224,9 +189,6 @@ const [visitorCount, setVisitorCount] = useState<number>(547); // Change 547 to 
 
 ## Features Explained
 
-### Theme Toggle
-Click the `[☾]` or `[☀]` button in the header to switch between dark and light modes. Your preference is saved in localStorage and persists across sessions.
-
 ### Info Card
 Click the `[INFO]` button in the header to see a quick profile card with your picture, name, role, and bio. On mobile, this appears as `[i]`.
 
@@ -239,19 +201,8 @@ Displayed in the footer, tracks total unique sessions. Increments once per brows
 ### Resume Download
 Available on the About page. Downloads the resume as `ALIREZA-GHOTBI-Resume.pdf` when clicked.
 
-### Custom Cursor
-Desktop users see a Windows 7-style purple glowing cursor that changes based on context:
-- **Default**: Arrow cursor
-- **Links/Buttons**: Hand pointer
-- **Text inputs**: I-beam cursor
-
-Mobile users see the standard system cursor.
-
-### CRT Effects
-Authentic retro terminal feel with:
-- Scanline overlay animation
-- Subtle flicker effect
-- Respects `prefers-reduced-motion` accessibility setting
+### Back link
+Every page has a `cd ..` link at the top (except the home page) that returns to the previous page, or to a sensible parent if the page was opened directly.
 
 ## Browser Support
 
@@ -285,7 +236,6 @@ Authentic retro terminal feel with:
 
 - Responsive typography (scales from xs to md)
 - Touch-friendly tap targets
-- Custom cursor hidden on mobile
 - Optimized spacing for smaller screens
 - Scrollable modals with max-height
 - Hamburger menu for mobile navigation
@@ -350,15 +300,6 @@ NEXT_PUBLIC_SITE_URL=https://yourdomain.com
 
 ## Troubleshooting
 
-### Cursor not showing
-- Check that you're on a desktop device
-- Ensure cursor files are in `public/cursors/`
-- Check browser console for loading errors
-
-### Theme not persisting
-- Check localStorage is enabled
-- Clear browser cache and reload
-
 ### Build errors
 ```bash
 # Clear Next.js cache
@@ -396,14 +337,16 @@ One Next.js app serves two hostnames and stores everything in a single SQLite fi
 
 | Host | What it is |
 | --- | --- |
-| `portfolio.tirok.ir` | public site: `/en/blog`, `/en/blog/<slug>`, latest posts on the home page, projects from the DB |
-| `blogs.tirok.ir` | private editor (login required): posts, drafts, categories, `#tags`, image upload, projects |
+| `portfolio.tirok.ir` | public site: `/en/blog`, `/en/blog/<slug>` (with comments), latest posts on the home page, projects and site info from the DB |
+| `admin.tirok.ir` | private editor (login required): posts, drafts, categories, `#tags`, image upload, projects, comments, site settings |
 
-- Data: `DATA_DIR/site.db` (posts, categories, tags, projects) and `DATA_DIR/uploads/` (images). Back up both.
+- Data: `DATA_DIR/site.db` (posts, categories, tags, projects, comments, settings) and `DATA_DIR/uploads/` (images). Back up both.
 - Posts are Markdown (headers, lists, code, tables, images). Raw HTML is sanitized.
 - Projects are seeded once from `lib/seed-projects.ts`; after that they're edited from the editor.
 - Auth: single admin, scrypt password hash, signed httpOnly cookie, login rate limit, same-origin check on every write.
-- Any host starting with `blogs.` is the editor, so locally use `http://blogs.localhost:3000`.
+- Site settings (`/settings` in the editor) hold the info that used to be hard-coded: name, role, location, birth date (age is computed), bio, contact details and availability, the tech stack lists, skills, interests and the resume "last updated" text. Defaults live in `lib/settings.ts`.
+- Comments: anyone can comment on a published post with just a username (no login). Guarded by same-origin check, a honeypot field, a per-IP rate limit (5 per 10 minutes), a link limit, and reserved usernames (your alias/name can't be impersonated). You reply to or delete comments from `/comments` in the editor; replies show an `[owner]` tag, and deleting a comment deletes its replies.
+- Any host starting with `admin.` is the editor, so locally use `http://admin.localhost:3000`.
 
 ### Setup
 
@@ -412,18 +355,18 @@ npm install
 node scripts/hash-password.mjs      # prints SESSION_SECRET + ADMIN_PASSWORD_HASH
 cp .env.example .env                # paste them in, set ADMIN_USER
 # dev over http: add INSECURE_COOKIES=1 to .env
-npm run dev                         # http://localhost:3000 and http://blogs.localhost:3000
+npm run dev                         # http://localhost:3000 and http://admin.localhost:3000
 ```
 
 Production with Docker: `docker compose up -d --build`. The app listens on `127.0.0.1:3000`.
 
 ### Reverse proxy
 
-Both hostnames go to the same upstream. Keep the `Host` header and pass the client IP (used for the login rate limit):
+Both hostnames go to the same upstream. Keep the `Host` header and pass the client IP (used for the login and comment rate limits):
 
 ```nginx
 server {
-    server_name portfolio.tirok.ir blogs.tirok.ir;
+    server_name portfolio.tirok.ir admin.tirok.ir;
     client_max_body_size 10m;              # image uploads are capped at 8 MB
     location / {
         proxy_pass http://127.0.0.1:3000;

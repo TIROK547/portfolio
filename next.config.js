@@ -1,4 +1,4 @@
-const editorHost = [{ type: 'host', value: 'blogs\\..*' }];
+const editorHost = [{ type: 'host', value: 'admin\\..*' }];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -7,7 +7,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // blogs.tirok.ir serves the editor from /admin/* without showing the prefix.
+  // admin.tirok.ir serves the editor from /admin/* without showing the prefix.
   // Access control for both hosts lives in middleware.ts.
   async rewrites() {
     return {
@@ -17,6 +17,8 @@ const nextConfig = {
         { source: '/posts/:path*', has: editorHost, destination: '/admin/posts/:path*' },
         { source: '/projects', has: editorHost, destination: '/admin/projects' },
         { source: '/projects/:path*', has: editorHost, destination: '/admin/projects/:path*' },
+        { source: '/comments', has: editorHost, destination: '/admin/comments' },
+        { source: '/settings', has: editorHost, destination: '/admin/settings' },
       ],
     };
   },

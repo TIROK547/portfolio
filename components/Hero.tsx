@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import AsciiArt from './AsciiArt';
+import type { StackGroup } from '@/lib/settings';
 
-export default function Hero() {
+interface HeroProps {
+  info: { name: string; alias: string; role: string; location: string; age: number };
+  stack: StackGroup[];
+}
+
+export default function Hero({ info, stack }: HeroProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [typingComplete, setTypingComplete] = useState(false);
 
@@ -19,23 +25,21 @@ export default function Hero() {
     };
   }, []);
 
-  const birthDate = new Date('2006-11-14');
-  const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  const [first, ...rest] = info.name.toLowerCase().split(/\s+/);
+  const userHandle = rest.length ? `${first}@${rest.join('')}` : `${info.alias}@web`;
+  const textColor = 'text-terminal-text-dark';
 
   const systemInfo = [
-    { label: 'user', value: 'alireza@ghotbi', color: 'text-terminal-text-light dark:text-terminal-text-dark', separator: true },
-    { label: 'alias', value: 'tirok', color: 'text-terminal-text-light dark:text-terminal-text-dark' },
-    { label: 'role', value: 'Junior Full Stack Web Developer', color: 'text-terminal-text-light dark:text-terminal-text-dark' },
-    { label: 'location', value: 'Tehran, Iran', color: 'text-terminal-text-light dark:text-terminal-text-dark' },
-    { label: 'age', value: `${age} years`, color: 'text-terminal-text-light dark:text-terminal-text-dark' },
-    { label: 'shell', value: '/bin/zsh', color: 'text-terminal-text-light dark:text-terminal-text-dark' },
+    { label: 'user', value: userHandle, color: textColor, separator: true },
+    { label: 'alias', value: info.alias, color: textColor },
+    { label: 'role', value: info.role, color: textColor },
+    { label: 'location', value: info.location, color: textColor },
+    { label: 'age', value: `${info.age} years`, color: textColor },
+    { label: 'shell', value: '/bin/zsh', color: textColor },
   ];
 
-  const stackInfo = [
-    { category: 'frontend', items: ['Next.js', 'React', 'TypeScript', 'Tailwind'] },
-    { category: 'backend', items: ['Django', 'PostgreSQL', 'Redis', 'Celery'] },
-    { category: 'devops', items: ['Docker', 'Nginx', 'Arch Linux'] },
-  ];
+  // The first few groups of the stack list, shortened to fit the neofetch panel.
+  const stackInfo = stack.slice(0, 3).map((g) => ({ category: g.category, items: g.items.slice(0, 4) }));
 
   return (
     <section className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-8 sm:py-12 px-4">

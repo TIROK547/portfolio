@@ -43,7 +43,10 @@ export default function TechIcon({ name, size = 16 }: TechIconProps) {
     'Linux': `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="6" r="2.5" fill="none" stroke="%23dbbc7f" stroke-width="1"/><path d="M6,8.5 Q6,12 4,14 M10,8.5 Q10,12 12,14 M6,14 L10,14" stroke="%23dbbc7f" stroke-width="1" fill="none"/></svg>`,
   };
 
-  const icon = icons[name] || icons['React']; // fallback to React icon
+  // Names can now be added from the editor, so unknown ones get a neutral letter tile instead of a wrong logo.
+  const letter = (name.trim()[0] ?? '?').toUpperCase().replace(/[<>&"'#%]/g, '?');
+  const fallback = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="12" height="12" fill="none" stroke="%2383c092" stroke-width="1"/><text x="8" y="11.5" font-family="monospace" font-size="9" fill="%2383c092" text-anchor="middle" font-weight="bold">${letter}</text></svg>`;
+  const icon = icons[name] || fallback;
   const encodedIcon = `data:image/svg+xml,${icon}`;
 
   return (

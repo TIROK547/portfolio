@@ -38,7 +38,6 @@ const config: Config = {
       animation: {
         'typing': 'typing 2s steps(40, end)',
         'blink': 'blink 1s step-end infinite',
-        'scanline': 'scanline 8s linear infinite',
       },
       keyframes: {
         typing: {
@@ -48,10 +47,6 @@ const config: Config = {
         blink: {
           '0%, 50%': { opacity: '1' },
           '51%, 100%': { opacity: '0' }
-        },
-        scanline: {
-          '0%': { transform: 'translateY(-100%)' },
-          '100%': { transform: 'translateY(100%)' }
         }
       }
     },

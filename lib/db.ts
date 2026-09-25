@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { seedProjects } from './seed-projects'
 import { slugify, makeExcerpt, readingMinutes } from './slug'
+import { mergeSettings, type SiteSettings } from './settings'
 
 export const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data')
 export const UPLOAD_DIR = path.join(DATA_DIR, 'uploads')
@@ -95,6 +96,20 @@ CREATE TABLE IF NOT EXISTS projects (
   sort_order  INTEGER NOT NULL DEFAULT 0,
   featured    INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS comments (
+  id         INTEGER PRIMARY KEY,
+  post_id    INTEGER NOT NULL REFERENCES posts(id)    ON DELETE CASCADE,
+  parent_id  INTEGER          REFERENCES comments(id) ON DELETE CASCADE,
+  author     TEXT NOT NULL,
+  body       TEXT NOT NULL,
+  is_admin   INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id, created_at);
 `
 
 const g = globalThis as unknown as { __db?: Database.Database }
@@ -387,4 +402,108 @@ export function saveProject(input: ProjectInput, id?: number): Project | null {
 
 export function deleteProject(id: number): boolean {
   return getDb().prepare('DELETE FROM projects WHERE id = ?').run(id).changes > 0
+}
+
+/* --------------------------------------------------------------- settings */
+
+export function getSettings(): SiteSettings {
+  const row = getDb().prepare("SELECT value FROM settings WHERE key = 'site'").get() as { value: string } | undefined
+  let stored: unknown = null
+  try {
+    stored = row ? JSON.parse(row.value) : null
+  } catch {}
+  return mergeSettings(stored)
+}
+
+export function saveSettings(value: SiteSettings): SiteSettings {
+  getDb()
+    .prepare("INSERT INTO settings (key, value) VALUES ('site', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+    .run(JSON.stringify(value))
+  return getSettings()
+}
+
+/* --------------------------------------------------------------- comments */
+
+export interface Comment {
+  id: number
+  postId: number
+  parentId: number | null
+  author: string
+  body: string
+  isAdmin: boolean
+  createdAt: string
+}
+export interface AdminComment extends Comment {
+  postTitle: string
+  postSlug: string
+}
+
+interface CommentRow {
+  id: number
+  post_id: number
+  parent_id: number | null
+  author: string
+  body: string
+  is_admin: number
+  created_at: string
+  post_title?: string
+  post_slug?: string
+}
+
+const toComment = (r: CommentRow): Comment => ({
+  id: r.id,
+  postId: r.post_id,
+  parentId: r.parent_id,
+  author: r.author,
+  body: r.body,
+  isAdmin: r.is_admin === 1,
+  createdAt: r.created_at,
+})
+
+export function listComments(postId: number): Comment[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM comments WHERE post_id = ? ORDER BY created_at ASC, id ASC')
+    .all(postId) as CommentRow[]
+  return rows.map(toComment)
+}
+
+export function listCommentsForAdmin(): AdminComment[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT c.*, p.title AS post_title, p.slug AS post_slug
+         FROM comments c JOIN posts p ON p.id = c.post_id
+        ORDER BY c.created_at DESC, c.id DESC LIMIT 500`,
+    )
+    .all() as CommentRow[]
+  return rows.map((r) => ({ ...toComment(r), postTitle: r.post_title ?? '', postSlug: r.post_slug ?? '' }))
+}
+
+export function getComment(id: number): Comment | null {
+  const r = getDb().prepare('SELECT * FROM comments WHERE id = ?').get(id) as CommentRow | undefined
+  return r ? toComment(r) : null
+}
+
+/** Replies always hang off a top-level comment: replying to a reply attaches to that reply's parent. */
+export function addComment(input: {
+  postId: number
+  parentId?: number | null
+  author: string
+  body: string
+  isAdmin?: boolean
+}): Comment | null {
+  const db = getDb()
+  let parentId: number | null = null
+  if (input.parentId) {
+    const parent = getComment(input.parentId)
+    if (!parent || parent.postId !== input.postId) return null
+    parentId = parent.parentId ?? parent.id
+  }
+  const info = db
+    .prepare('INSERT INTO comments (post_id, parent_id, author, body, is_admin, created_at) VALUES (?,?,?,?,?,?)')
+    .run(input.postId, parentId, input.author, input.body, input.isAdmin ? 1 : 0, new Date().toISOString())
+  return getComment(Number(info.lastInsertRowid))
+}
+
+export function deleteComment(id: number): boolean {
+  return getDb().prepare('DELETE FROM comments WHERE id = ?').run(id).changes > 0
 }

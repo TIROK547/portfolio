@@ -1,13 +1,7 @@
 import TechIcon from './TechIcon';
+import type { StackGroup } from '@/lib/settings';
 
-export default function StackDisplay() {
-  const stack = {
-    frontend: ['Next.js', 'TypeScript', 'Tailwind CSS', 'React'],
-    backend: ['Django', 'Django REST Framework', 'JWT Auth', 'PostgreSQL', 'Celery', 'Redis', 'RabbitMQ', 'Channels'],
-    devops: ['Docker', 'Nginx', 'Cloudflared', 'systemd', 'Arch Linux'],
-    extras: ['Telegram Bots', 'WebSocket'],
-  };
-
+export default function StackDisplay({ stack }: { stack: StackGroup[] }) {
   return (
     <section className="py-16 px-4">
       <div className="max-w-6xl mx-auto">
@@ -26,73 +20,26 @@ export default function StackDisplay() {
             </h2>
 
             <div className="space-y-6 text-sm sm:text-base font-mono">
-              {/* Frontend */}
-              <div>
-                <div className="text-terminal-accent-blue font-semibold mb-2">
-                  [FRONTEND]
+              {stack.map((group) => (
+                <div key={group.category}>
+                  <div className="text-terminal-accent-blue font-semibold mb-2">
+                    [{group.category.toUpperCase()}]
+                  </div>
+                  <div className="pl-4 space-y-1">
+                    {group.items.map((tech, index) => (
+                      <div key={index} className="text-terminal-text-dark flex items-center gap-2">
+                        <span className="text-terminal-accent-purple">→</span>
+                        <TechIcon name={tech} size={20} />
+                        <span>{tech}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="pl-4 space-y-1">
-                  {stack.frontend.map((tech, index) => (
-                    <div key={index} className="text-terminal-text-light dark:text-terminal-text-dark flex items-center gap-2">
-                      <span className="text-terminal-accent-purple">→</span>
-                      <TechIcon name={tech} size={20} />
-                      <span>{tech}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Backend */}
-              <div>
-                <div className="text-terminal-accent-blue font-semibold mb-2">
-                  [BACKEND]
-                </div>
-                <div className="pl-4 space-y-1">
-                  {stack.backend.map((tech, index) => (
-                    <div key={index} className="text-terminal-text-light dark:text-terminal-text-dark flex items-center gap-2">
-                      <span className="text-terminal-accent-purple">→</span>
-                      <TechIcon name={tech} size={20} />
-                      <span>{tech}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* DevOps */}
-              <div>
-                <div className="text-terminal-accent-blue font-semibold mb-2">
-                  [DEVOPS]
-                </div>
-                <div className="pl-4 space-y-1">
-                  {stack.devops.map((tech, index) => (
-                    <div key={index} className="text-terminal-text-light dark:text-terminal-text-dark flex items-center gap-2">
-                      <span className="text-terminal-accent-purple">→</span>
-                      <TechIcon name={tech} size={20} />
-                      <span>{tech}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Extras */}
-              <div>
-                <div className="text-terminal-accent-blue font-semibold mb-2">
-                  [EXTRAS]
-                </div>
-                <div className="pl-4 space-y-1">
-                  {stack.extras.map((tech, index) => (
-                    <div key={index} className="text-terminal-text-light dark:text-terminal-text-dark flex items-center gap-2">
-                      <span className="text-terminal-accent-purple">→</span>
-                      <TechIcon name={tech} size={20} />
-                      <span>{tech}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
 
               <div className="pt-4 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
                 <span className="text-terminal-text-light/60 dark:text-terminal-text-dark/60 text-xs">
-                  # Total packages: {Object.values(stack).flat().length}
+                  # Total packages: {stack.reduce((n, g) => n + g.items.length, 0)}
                 </span>
               </div>
             </div>

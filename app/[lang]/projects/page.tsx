@@ -1,14 +1,17 @@
 import ProjectCard from '@/components/ProjectCard';
+import BackLink from '@/components/BackLink';
 import { listProjects } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-export default function ProjectsPage() {
+export default async function ProjectsPage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
   const projects = listProjects();
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
       <div className="max-w-6xl mx-auto">
+        <BackLink fallback={`/${lang}`} className="inline-block mb-6" />
         {/* Header */}
         <div className="mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">

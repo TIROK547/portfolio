@@ -4,14 +4,14 @@ import { SESSION_COOKIE, verifySessionToken } from '@/lib/session'
 /**
  * One app, two hosts:
  *  - portfolio.tirok.ir -> public site; /admin and /api/admin are 404 here.
- *  - blogs.tirok.ir     -> private editor; only the paths below exist, and everything but /login
+ *  - admin.tirok.ir     -> private editor; only the paths below exist, and everything but /login
  *                          needs a valid session. (The host -> /admin/* rewrite is in next.config.js.)
- * Any host starting with "blogs." counts as the editor host, so blogs.localhost works in dev.
+ * Any host starting with "admin." counts as the editor host, so admin.localhost works in dev.
  *
  * Redirect targets are built from the Host header: in a standalone deployment behind a reverse proxy,
  * req.url carries the server's bind address (e.g. http://0.0.0.0:3000), not the public hostname.
  */
-const EDITOR_PATHS = /^\/(login|posts(\/.*)?|projects(\/.*)?|uploads\/.*|api\/admin\/.*)?$/
+const EDITOR_PATHS = /^\/(login|posts(\/.*)?|projects(\/.*)?|comments|settings|uploads\/.*|api\/admin\/.*)?$/
 
 const notFound = () => new NextResponse('Not found', { status: 404 })
 const redirect = (req: NextRequest, to: string, status = 307) => {
@@ -23,7 +23,7 @@ export async function middleware(req: NextRequest) {
   const host = (req.headers.get('host') ?? '').split(':')[0].toLowerCase()
   const { pathname } = req.nextUrl
 
-  if (!host.startsWith('blogs.')) {
+  if (!host.startsWith('admin.')) {
     if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) return notFound()
     if (pathname === '/') return redirect(req, '/en', 308)
     return NextResponse.next()
