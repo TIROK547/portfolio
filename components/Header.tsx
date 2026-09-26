@@ -27,11 +27,11 @@ export default function Header({ locale, translations, info }: HeaderProps) {
 
   const currentPath = pathname.replace(`/${locale}`, '');
 
+  // Blog has its own [BLOG] shortcut button next to [INFO], so it's left out of this list.
   const navItems = [
     { name: 'home', path: '' },
     { name: 'about', path: '/about' },
     { name: 'projects', path: '/projects' },
-    { name: 'blog', path: '/blog' },
     { name: 'contact', path: '/contact' },
   ];
 
@@ -64,6 +64,18 @@ export default function Header({ locale, translations, info }: HeaderProps) {
                 [INFO]
               </button>
 
+              {/* Blog Shortcut */}
+              <Link
+                href={`/${locale}/blog`}
+                className={`px-3 py-1 border transition-colors text-sm ${
+                  isActive('/blog')
+                    ? 'border-terminal-accent-cyan text-terminal-accent-cyan'
+                    : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan dark:hover:border-terminal-accent-cyan'
+                }`}
+              >
+                [BLOG]
+              </Link>
+
               {/* Hamburger Menu */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -83,6 +95,17 @@ export default function Header({ locale, translations, info }: HeaderProps) {
               >
                 [i]
               </button>
+
+              <Link
+                href={`/${locale}/blog`}
+                className={`px-2 py-1 border text-xs ${
+                  isActive('/blog')
+                    ? 'border-terminal-accent-cyan text-terminal-accent-cyan'
+                    : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20'
+                }`}
+              >
+                [blog]
+              </Link>
 
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}

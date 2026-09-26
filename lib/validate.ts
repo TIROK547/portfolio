@@ -81,6 +81,16 @@ export function parseProjectInput(body: unknown): Result<ProjectInput> {
   return { ok: true, value: { name, description, github, status: b.status, stack, sortOrder, featured: b.featured === true } }
 }
 
+export function parseProjectOrder(body: unknown): Result<number[]> {
+  if (!body || typeof body !== 'object') return { ok: false, error: 'invalid body' }
+  const ids = (body as Record<string, unknown>).ids
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200) {
+    return { ok: false, error: 'ids must be a non-empty array' }
+  }
+  if (!ids.every((v) => Number.isInteger(v))) return { ok: false, error: 'ids must be integers' }
+  return { ok: true, value: ids as number[] }
+}
+
 /* --------------------------------------------------------------- settings */
 
 const line = (v: unknown, max: number, label: string, required = true): Result<string> => {

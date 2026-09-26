@@ -19,7 +19,7 @@ export default function HomePage() {
   return (
     <div className="space-y-0">
       {/* Hero Section */}
-      <Hero info={{ name: profile.name, alias: profile.alias, role: profile.role, location: profile.location, age }} stack={stack} />
+      <Hero info={{ name: profile.name, alias: profile.alias, role: profile.role, location: profile.location, age }} stack={stack} locale="en" />
 
       {/* About Preview */}
       <section className="py-12 sm:py-16 px-4 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">

@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import PostCard from '@/components/PostCard'
 import BackLink from '@/components/BackLink'
+import BlogFilters from '@/components/BlogFilters'
 import { listCategories, listPosts, listTags } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -9,7 +9,8 @@ export const metadata = {
   description: 'Daily experiences and thoughts on software, servers and study.',
 }
 
-type SP = Promise<{ tag?: string | string[]; category?: string | string[] }>
+type SP = Promise<{ tag?: string | string[]; category?: string | string[]; q?: string }>
+const many = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? [v] : [])
 const one = (v: string | string[] | undefined) => (typeof v === 'string' && v ? v : undefined)
 
 export default async function BlogPage({
@@ -21,20 +22,14 @@ export default async function BlogPage({
 }) {
   const { lang } = await params
   const sp = await searchParams
-  const tag = one(sp.tag)
-  const category = one(sp.category)
+  const tags = many(sp.tag)
+  const categories = many(sp.category)
+  const q = one(sp.q)
 
-  const posts = listPosts({ publishedOnly: true, tag, category })
-  const categories = listCategories()
-  const tags = listTags()
+  const posts = listPosts({ publishedOnly: true, tag: tags, category: categories, q })
+  const allCategories = listCategories()
+  const allTags = listTags()
   const base = `/${lang}/blog`
-
-  const chip = (active: boolean) =>
-    `text-xs px-2 py-1 border transition-colors ${
-      active
-        ? 'border-terminal-accent-cyan text-terminal-accent-cyan bg-terminal-accent-cyan/10'
-        : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan'
-    }`
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
@@ -49,40 +44,26 @@ export default async function BlogPage({
           <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-4" />
           <p className="text-sm text-terminal-text-light/60 dark:text-terminal-text-dark/60">
             total {posts.length} {posts.length === 1 ? 'post' : 'posts'}
-            {category && <> · category: <span className="text-terminal-accent-cyan">{category}</span></>}
-            {tag && <> · tag: <span className="text-terminal-accent-yellow">#{tag}</span></>}
+            {categories.length > 0 && (
+              <> · categories: <span className="text-terminal-accent-cyan">{categories.join(', ')}</span></>
+            )}
+            {tags.length > 0 && (
+              <> · tags: <span className="text-terminal-accent-yellow">{tags.map((t) => `#${t}`).join(', ')}</span></>
+            )}
+            {q && <> · search: <span className="text-terminal-accent-green">"{q}"</span></>}
           </p>
         </div>
 
-        {(categories.length > 0 || tags.length > 0) && (
-          <div className="mb-8 space-y-3">
-            {categories.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-terminal-accent-cyan min-w-[80px]">categories:</span>
-                <Link href={base} className={chip(!category && !tag)}>all</Link>
-                {categories.map((c) => (
-                  <Link key={c.slug} href={`${base}?category=${encodeURIComponent(c.slug)}`} className={chip(category === c.slug)}>
-                    {c.name} ({c.count})
-                  </Link>
-                ))}
-              </div>
-            )}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-terminal-accent-cyan min-w-[80px]">tags:</span>
-                {tags.map((t) => (
-                  <Link key={t.name} href={`${base}?tag=${encodeURIComponent(t.name)}`} className={chip(tag === t.name)}>
-                    #{t.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        <BlogFilters
+          base={base}
+          initialQuery={q ?? ''}
+          categories={allCategories.map((c) => ({ value: c.slug, label: c.name, count: c.count }))}
+          tags={allTags.map((t) => ({ value: t.name, label: t.name, count: t.count }))}
+        />
 
         {posts.length === 0 ? (
           <div className="border border-dashed border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-6 text-center text-terminal-text-light/60 dark:text-terminal-text-dark/60">
-            <span className="text-terminal-accent-cyan">[INFO]</span> nothing here yet.
+            <span className="text-terminal-accent-cyan">[INFO]</span> nothing matches that.
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,17 +1,29 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import AsciiArt from './AsciiArt';
-import type { StackGroup } from '@/lib/settings';
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import AsciiArt from "./AsciiArt";
+import type { StackGroup } from "@/lib/settings";
 
 interface HeroProps {
-  info: { name: string; alias: string; role: string; location: string; age: number };
+  info: {
+    name: string;
+    alias: string;
+    role: string;
+    location: string;
+    age: number;
+  };
   stack: StackGroup[];
+  locale?: string;
 }
 
-export default function Hero({ info, stack }: HeroProps) {
+export default function Hero({ info, stack, locale = "en" }: HeroProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [typingComplete, setTypingComplete] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  // Subtle glow that follows the pointer. Kept as a ref-driven CSS var (not React state) so it
+  // updates every frame without triggering a re-render.
+  const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsVisible(true);
@@ -25,36 +37,87 @@ export default function Hero({ info, stack }: HeroProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const section = sectionRef.current;
+    const glow = glowRef.current;
+    if (!section || !glow) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    function onMove(e: PointerEvent) {
+      const rect = section!.getBoundingClientRect();
+      glow!.style.setProperty("--gx", `${e.clientX - rect.left}px`);
+      glow!.style.setProperty("--gy", `${e.clientY - rect.top}px`);
+      glow!.style.opacity = "1";
+    }
+    function onLeave() {
+      glow!.style.opacity = "0";
+    }
+
+    section.addEventListener("pointermove", onMove);
+    section.addEventListener("pointerleave", onLeave);
+    return () => {
+      section.removeEventListener("pointermove", onMove);
+      section.removeEventListener("pointerleave", onLeave);
+    };
+  }, []);
+
   const [first, ...rest] = info.name.toLowerCase().split(/\s+/);
-  const userHandle = rest.length ? `${first}@${rest.join('')}` : `${info.alias}@web`;
-  const textColor = 'text-terminal-text-dark';
+  const userHandle = rest.length
+    ? `${first}@${rest.join("")}`
+    : `${info.alias}@web`;
+  const textColor = "text-terminal-text-dark";
 
   const systemInfo = [
-    { label: 'user', value: userHandle, color: textColor, separator: true },
-    { label: 'alias', value: info.alias, color: textColor },
-    { label: 'role', value: info.role, color: textColor },
-    { label: 'location', value: info.location, color: textColor },
-    { label: 'age', value: `${info.age} years`, color: textColor },
-    { label: 'shell', value: '/bin/zsh', color: textColor },
+    { label: "user", value: userHandle, color: textColor, separator: true },
+    { label: "alias", value: info.alias, color: textColor },
+    { label: "role", value: info.role, color: textColor },
+    { label: "location", value: info.location, color: textColor },
+    { label: "age", value: `${info.age} years`, color: textColor },
+    { label: "shell", value: "/bin/zsh", color: textColor },
   ];
 
   // The first few groups of the stack list, shortened to fit the neofetch panel.
-  const stackInfo = stack.slice(0, 3).map((g) => ({ category: g.category, items: g.items.slice(0, 4) }));
+  const stackInfo = stack
+    .slice(0, 3)
+    .map((g) => ({ category: g.category, items: g.items.slice(0, 4) }));
 
   return (
-    <section className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-8 sm:py-12 px-4">
+    <section
+      ref={sectionRef}
+      className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center py-8 sm:py-12 px-4 overflow-hidden"
+    >
+      {/* Pointer-follow glow: pure decoration, ignores clicks/taps */}
       <div
-        className={`w-full max-w-6xl transition-opacity duration-1000 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
+        ref={glowRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300"
+        style={{
+          background:
+            "radial-gradient(500px circle at var(--gx, 50%) var(--gy, 50%), rgba(127,187,179,0.10), transparent 0%)",
+        }}
+      />
+
+      <div
+        className={`relative w-full max-w-6xl p-8 rounded-3xl bg-gray-950/40 backdrop-blur-xl border border-white/20 transition-opacity duration-1000 ${
+          isVisible ? "opacity-100" : "opacity-0"
         }`}
       >
         {/* Terminal Header */}
         <div className="mb-4 overflow-x-auto">
           <div className="min-w-max">
-            <span className="text-terminal-accent-red text-xs sm:text-sm">$</span>
-            <span className="text-terminal-accent-green text-xs sm:text-sm ml-2">neofetch</span>
-            <span className="text-terminal-text-light dark:text-terminal-text-dark text-xs sm:text-sm"> --config </span>
-            <span className="text-terminal-accent-blue text-xs sm:text-sm">~/.config/neofetch/tirok.conf</span>
+            <span className="text-terminal-accent-red text-xs sm:text-sm">
+              $
+            </span>
+            <span className="text-terminal-accent-green text-xs sm:text-sm ml-2">
+              neofetch
+            </span>
+            <span className="text-terminal-text-light dark:text-terminal-text-dark text-xs sm:text-sm">
+              {" "}
+              --config{" "}
+            </span>
+            <span className="text-terminal-accent-blue text-xs sm:text-sm">
+              ~/.config/neofetch/tirok.conf
+            </span>
           </div>
         </div>
 
@@ -78,13 +141,17 @@ export default function Hero({ info, stack }: HeroProps) {
                   style={{
                     transitionDelay: `${index * 100}ms`,
                     opacity: isVisible ? 1 : 0,
-                    transform: isVisible ? 'translateX(0)' : 'translateX(-20px)',
+                    transform: isVisible
+                      ? "translateX(0)"
+                      : "translateX(-20px)",
                   }}
                 >
                   <span className="text-terminal-accent-cyan font-semibold min-w-[100px]">
                     {info.label}
                   </span>
-                  <span className="text-terminal-accent-yellow">{info.value}</span>
+                  <span className="text-terminal-accent-yellow">
+                    {info.value}
+                  </span>
                 </div>
               </div>
             ))}
@@ -97,7 +164,7 @@ export default function Hero({ info, stack }: HeroProps) {
                 style={{
                   transitionDelay: `${systemInfo.length * 100}ms`,
                   opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? 'translateX(0)' : 'translateX(-20px)',
+                  transform: isVisible ? "translateX(0)" : "translateX(-20px)",
                 }}
               >
                 <div className="flex gap-2 mb-2">
@@ -107,15 +174,19 @@ export default function Hero({ info, stack }: HeroProps) {
                   <div className="flex-1 space-y-1">
                     {stackInfo.map((stack, idx) => (
                       <div key={idx} className="flex gap-2 flex-wrap">
-                        <span className={`text-xs ${
-                          idx === 0 ? 'text-terminal-accent-green' :
-                          idx === 1 ? 'text-terminal-accent-blue' :
-                          'text-terminal-accent-orange'
-                        }`}>
+                        <span
+                          className={`text-xs ${
+                            idx === 0
+                              ? "text-terminal-accent-green"
+                              : idx === 1
+                                ? "text-terminal-accent-blue"
+                                : "text-terminal-accent-orange"
+                          }`}
+                        >
                           [{stack.category}]
                         </span>
                         <span className="text-terminal-accent-yellow">
-                          {stack.items.join(' • ')}
+                          {stack.items.join(" • ")}
                         </span>
                       </div>
                     ))}
@@ -129,12 +200,12 @@ export default function Hero({ info, stack }: HeroProps) {
               <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-3" />
               <div className="flex gap-3">
                 {[
-                  { char: '●', color: 'text-terminal-accent-blue' },
-                  { char: '●', color: 'text-terminal-accent-magenta' },
-                  { char: '●', color: 'text-terminal-accent-cyan' },
-                  { char: '●', color: 'text-terminal-accent-green' },
-                  { char: '●', color: 'text-terminal-accent-yellow' },
-                  { char: '●', color: 'text-terminal-accent-orange' },
+                  { char: "●", color: "text-terminal-accent-blue" },
+                  { char: "●", color: "text-terminal-accent-magenta" },
+                  { char: "●", color: "text-terminal-accent-cyan" },
+                  { char: "●", color: "text-terminal-accent-green" },
+                  { char: "●", color: "text-terminal-accent-yellow" },
+                  { char: "●", color: "text-terminal-accent-orange" },
                 ].map((item, i) => (
                   <span
                     key={i}
@@ -153,11 +224,34 @@ export default function Hero({ info, stack }: HeroProps) {
             {/* Blinking cursor */}
             <div className="pt-3">
               <span className="text-terminal-text-light dark:text-terminal-text-dark">
-                <span className="text-terminal-accent-red">$</span>{' '}
+                <span className="text-terminal-accent-red">$</span>{" "}
                 {typingComplete && <span className="animate-pulse">▋</span>}
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Quick nav: keeps the hero useful instead of just decorative */}
+        <div
+          className="mt-6 flex flex-wrap items-center gap-x-1 gap-y-2 text-xs sm:text-sm font-mono transition-all duration-500"
+          style={{ transitionDelay: "900ms", opacity: isVisible ? 1 : 0 }}
+        >
+          <span className="text-terminal-accent-red">$</span>
+          <span className="text-terminal-accent-green">./explore.sh</span>
+          {[
+            { flag: "--about", href: `/${locale}/about` },
+            { flag: "--projects", href: `/${locale}/projects` },
+            { flag: "--blog", href: `/${locale}/blog` },
+            { flag: "--contact", href: `/${locale}/contact` },
+          ].map((item) => (
+            <Link
+              key={item.flag}
+              href={item.href}
+              className="px-2 py-0.5 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-terminal-accent-yellow hover:border-terminal-accent-cyan hover:text-terminal-accent-cyan transition-colors"
+            >
+              {item.flag}
+            </Link>
+          ))}
         </div>
       </div>
     </section>

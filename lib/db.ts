@@ -191,23 +191,36 @@ function hydrate(rows: PostRow[]): Post[] {
 
 export function listPosts(opts: {
   publishedOnly?: boolean
-  tag?: string
-  category?: string
+  tag?: string | string[]
+  category?: string | string[]
+  q?: string
   limit?: number
 } = {}): PostSummary[] {
   const where: string[] = []
   const args: (string | number)[] = []
   if (opts.publishedOnly) where.push(`p.status = 'published'`)
-  if (opts.category) {
-    where.push('c.slug = ?')
-    args.push(opts.category)
+
+  const categories = ([] as string[]).concat(opts.category ?? []).filter(Boolean)
+  if (categories.length) {
+    where.push(`c.slug IN (${categories.map(() => '?').join(',')})`)
+    args.push(...categories)
   }
-  if (opts.tag) {
+
+  const tags = ([] as string[]).concat(opts.tag ?? []).filter(Boolean)
+  if (tags.length) {
     where.push(
-      `EXISTS (SELECT 1 FROM post_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.post_id = p.id AND t.name = ?)`,
+      `EXISTS (SELECT 1 FROM post_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.post_id = p.id AND t.name IN (${tags.map(() => '?').join(',')}))`,
     )
-    args.push(opts.tag)
+    args.push(...tags)
   }
+
+  const q = opts.q?.trim().slice(0, 100)
+  if (q) {
+    where.push(`(p.title LIKE ? ESCAPE '\\' OR p.excerpt LIKE ? ESCAPE '\\' OR p.content LIKE ? ESCAPE '\\')`)
+    const like = `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`
+    args.push(like, like, like)
+  }
+
   const sql = `SELECT ${POST_COLS} ${POST_FROM}
     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
     ORDER BY COALESCE(p.published_at, p.updated_at) DESC, p.id DESC LIMIT ?`
@@ -402,6 +415,15 @@ export function saveProject(input: ProjectInput, id?: number): Project | null {
 
 export function deleteProject(id: number): boolean {
   return getDb().prepare('DELETE FROM projects WHERE id = ?').run(id).changes > 0
+}
+
+/** Sets sort_order to match the given id order (index in the array = new position). Ignores unknown ids. */
+export function reorderProjects(ids: number[]): void {
+  const db = getDb()
+  const update = db.prepare('UPDATE projects SET sort_order = ? WHERE id = ?')
+  db.transaction((list: number[]) => {
+    list.forEach((id, index) => update.run(index, id))
+  })(ids)
 }
 
 /* --------------------------------------------------------------- settings */
