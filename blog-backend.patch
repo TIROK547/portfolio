@@ -1,728 +1,652 @@
-diff --git a/app/[lang]/blog/page.tsx b/app/[lang]/blog/page.tsx
-index a336f66..f812950 100644
---- a/app/[lang]/blog/page.tsx
-+++ b/app/[lang]/blog/page.tsx
-@@ -1,6 +1,6 @@
--import Link from 'next/link'
- import PostCard from '@/components/PostCard'
- import BackLink from '@/components/BackLink'
-+import BlogFilters from '@/components/BlogFilters'
- import { listCategories, listPosts, listTags } from '@/lib/db'
+diff --git a/Dockerfile b/Dockerfile
+index f392452..920f35f 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -20,4 +20,6 @@ RUN mkdir /data && chown node:node /data
+ USER node
+ VOLUME /data
+ EXPOSE 3000
++HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
++  CMD node -e "require('http').get('http://127.0.0.1:3000/en',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+ CMD ["node", "server.js"]
+diff --git a/app/[lang]/about/page.tsx b/app/[lang]/about/page.tsx
+index 105871a..1957704 100644
+--- a/app/[lang]/about/page.tsx
++++ b/app/[lang]/about/page.tsx
+@@ -22,7 +22,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
+             <span className="text-terminal-accent-green">cat</span>{" "}
+             <span className="text-terminal-accent-blue">about_me.md</span>
+           </h1>
+-          <div className="h-px bg-terminal-text-light/20 dark:border-terminal-text-dark/20" />
++          <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20" />
+         </div>
+ 
+         {/* Profile Section */}
+diff --git a/app/[lang]/contact/page.tsx b/app/[lang]/contact/page.tsx
+index 4801654..8c86c2d 100644
+--- a/app/[lang]/contact/page.tsx
++++ b/app/[lang]/contact/page.tsx
+@@ -8,10 +8,10 @@ export default async function ContactPage({ params }: { params: Promise<{ lang:
+   const { contact: c } = getSettings();
+ 
+   const contacts = [
+-    { label: 'email', value: c.email, href: `mailto:${c.email}`, icon: '📧' },
+-    ...(c.telegram ? [{ label: 'telegram', value: `@${c.telegram}`, href: `https://t.me/${c.telegram}`, icon: '✈' }] : []),
+-    ...(c.github ? [{ label: 'github', value: c.github, href: `https://github.com/${c.github}`, icon: '🔗' }] : []),
+-    { label: 'linkedin', value: c.linkedin ? c.linkedin.replace(/^https:\/\/(www\.)?/, '') : 'Coming soon...', href: c.linkedin || '#', icon: '💼' },
++    { label: 'email', value: c.email, href: `mailto:${c.email}`, icon: '[@]' },
++    ...(c.telegram ? [{ label: 'telegram', value: `@${c.telegram}`, href: `https://t.me/${c.telegram}`, icon: '[TG]' }] : []),
++    ...(c.github ? [{ label: 'github', value: c.github, href: `https://github.com/${c.github}`, icon: '[GH]' }] : []),
++    { label: 'linkedin', value: c.linkedin ? c.linkedin.replace(/^https:\/\/(www\.)?/, '') : 'Coming soon...', href: c.linkedin || '#', icon: '[in]' },
+   ];
+ 
+   return (
+@@ -54,7 +54,7 @@ export default async function ContactPage({ params }: { params: Promise<{ lang:
+               className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-4 hover:border-terminal-accent-amber dark:hover:border-terminal-accent-amber transition-colors group"
+             >
+               <div className="flex items-start gap-4">
+-                <span className="text-2xl">{contact.icon}</span>
++                <span className="text-lg font-mono text-terminal-accent-blue w-12 shrink-0">{contact.icon}</span>
+                 <div className="flex-1">
+                   <div className="text-terminal-accent-cyan text-sm mb-1">
+                     {contact.label}:
+diff --git a/app/[lang]/layout.tsx b/app/[lang]/layout.tsx
+index 72781ad..2fa0cbf 100644
+--- a/app/[lang]/layout.tsx
++++ b/app/[lang]/layout.tsx
+@@ -1,8 +1,9 @@
+ import { locales, isValidLocale, getTranslations, type Locale } from '@/lib/i18n'
+ import Header from '@/components/Header'
+ import Footer from '@/components/Footer'
+-import { getSettings } from '@/lib/db'
++import { getSettings, getLastUpdated } from '@/lib/db'
+ import { ageFrom, bioParagraphs } from '@/lib/settings'
++import { formatDate } from '@/lib/format'
+ import { notFound } from 'next/navigation'
  
  export const dynamic = 'force-dynamic'
-@@ -9,7 +9,8 @@ export const metadata = {
-   description: 'Daily experiences and thoughts on software, servers and study.',
- }
- 
--type SP = Promise<{ tag?: string | string[]; category?: string | string[] }>
-+type SP = Promise<{ tag?: string | string[]; category?: string | string[]; q?: string }>
-+const many = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? [v] : [])
- const one = (v: string | string[] | undefined) => (typeof v === 'string' && v ? v : undefined)
- 
- export default async function BlogPage({
-@@ -21,21 +22,15 @@ export default async function BlogPage({
- }) {
-   const { lang } = await params
-   const sp = await searchParams
--  const tag = one(sp.tag)
--  const category = one(sp.category)
-+  const tags = many(sp.tag)
-+  const categories = many(sp.category)
-+  const q = one(sp.q)
- 
--  const posts = listPosts({ publishedOnly: true, tag, category })
--  const categories = listCategories()
--  const tags = listTags()
-+  const posts = listPosts({ publishedOnly: true, tag: tags, category: categories, q })
-+  const allCategories = listCategories()
-+  const allTags = listTags()
-   const base = `/${lang}/blog`
- 
--  const chip = (active: boolean) =>
--    `text-xs px-2 py-1 border transition-colors ${
--      active
--        ? 'border-terminal-accent-cyan text-terminal-accent-cyan bg-terminal-accent-cyan/10'
--        : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan'
--    }`
--
-   return (
-     <div className="min-h-screen py-8 sm:py-12 px-4">
-       <div className="max-w-6xl mx-auto">
-@@ -49,40 +44,26 @@ export default async function BlogPage({
-           <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-4" />
-           <p className="text-sm text-terminal-text-light/60 dark:text-terminal-text-dark/60">
-             total {posts.length} {posts.length === 1 ? 'post' : 'posts'}
--            {category && <> · category: <span className="text-terminal-accent-cyan">{category}</span></>}
--            {tag && <> · tag: <span className="text-terminal-accent-yellow">#{tag}</span></>}
--          </p>
--        </div>
--
--        {(categories.length > 0 || tags.length > 0) && (
--          <div className="mb-8 space-y-3">
-             {categories.length > 0 && (
--              <div className="flex flex-wrap items-center gap-2">
--                <span className="text-xs text-terminal-accent-cyan min-w-[80px]">categories:</span>
--                <Link href={base} className={chip(!category && !tag)}>all</Link>
--                {categories.map((c) => (
--                  <Link key={c.slug} href={`${base}?category=${encodeURIComponent(c.slug)}`} className={chip(category === c.slug)}>
--                    {c.name} ({c.count})
--                  </Link>
--                ))}
--              </div>
-+              <> · categories: <span className="text-terminal-accent-cyan">{categories.join(', ')}</span></>
-             )}
-             {tags.length > 0 && (
--              <div className="flex flex-wrap items-center gap-2">
--                <span className="text-xs text-terminal-accent-cyan min-w-[80px]">tags:</span>
--                {tags.map((t) => (
--                  <Link key={t.name} href={`${base}?tag=${encodeURIComponent(t.name)}`} className={chip(tag === t.name)}>
--                    #{t.name}
--                  </Link>
--                ))}
--              </div>
-+              <> · tags: <span className="text-terminal-accent-yellow">{tags.map((t) => `#${t}`).join(', ')}</span></>
-             )}
--          </div>
--        )}
-+            {q && <> · search: <span className="text-terminal-accent-green">"{q}"</span></>}
-+          </p>
-+        </div>
-+
-+        <BlogFilters
-+          base={base}
-+          initialQuery={q ?? ''}
-+          categories={allCategories.map((c) => ({ value: c.slug, label: c.name, count: c.count }))}
-+          tags={allTags.map((t) => ({ value: t.name, label: t.name, count: t.count }))}
-+        />
- 
-         {posts.length === 0 ? (
-           <div className="border border-dashed border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-6 text-center text-terminal-text-light/60 dark:text-terminal-text-dark/60">
--            <span className="text-terminal-accent-cyan">[INFO]</span> nothing here yet.
-+            <span className="text-terminal-accent-cyan">[INFO]</span> nothing matches that.
-           </div>
-         ) : (
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-diff --git a/app/[lang]/page.tsx b/app/[lang]/page.tsx
-index faf82ce..6a93596 100644
---- a/app/[lang]/page.tsx
-+++ b/app/[lang]/page.tsx
-@@ -11,7 +11,9 @@ export const dynamic = 'force-dynamic';
- 
- export default function HomePage() {
-   const featuredProjects = listProjects({ featuredOnly: true });
-+  const allProjectsCount = listProjects().length;
-   const latestPosts = listPosts({ publishedOnly: true, limit: 3 });
-+  const allPostsCount = listPosts({ publishedOnly: true }).length;
-   const { profile, contact, stack } = getSettings();
-   const age = ageFrom(profile.birthDate);
-   const intro = bioParagraphs(profile.bio, age)[0] ?? '';
-@@ -19,7 +21,25 @@ export default function HomePage() {
-   return (
-     <div className="space-y-0">
-       {/* Hero Section */}
--      <Hero info={{ name: profile.name, alias: profile.alias, role: profile.role, location: profile.location, age }} stack={stack} />
-+      <Hero info={{ name: profile.name, alias: profile.alias, role: profile.role, location: profile.location, age }} stack={stack} locale="en" />
-+
-+      {/* Quick Stats */}
-+      <div className="border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20 py-6 px-4">
-+        <div className="max-w-6xl mx-auto flex flex-wrap items-center gap-x-8 gap-y-2 text-xs sm:text-sm font-mono text-terminal-text-light/70 dark:text-terminal-text-dark/70">
-+          <span className="text-terminal-accent-green">
-+            <span className="text-terminal-accent-cyan">projects</span> {allProjectsCount}
-+          </span>
-+          <span className="text-terminal-accent-green">
-+            <span className="text-terminal-accent-cyan">posts</span> {allPostsCount}
-+          </span>
-+          <span className="text-terminal-accent-green">
-+            <span className="text-terminal-accent-cyan">stack</span> {stack.reduce((n, g) => n + g.items.length, 0)} tools
-+          </span>
-+          <span className="text-terminal-accent-green">
-+            <span className="text-terminal-accent-cyan">status</span> {contact.status || 'available'}
-+          </span>
-+        </div>
-+      </div>
- 
-       {/* About Preview */}
-       <section className="py-12 sm:py-16 px-4 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
-diff --git a/app/admin/(protected)/projects/page.tsx b/app/admin/(protected)/projects/page.tsx
-index af74e58..aea4221 100644
---- a/app/admin/(protected)/projects/page.tsx
-+++ b/app/admin/(protected)/projects/page.tsx
-@@ -1,4 +1,5 @@
- import Link from 'next/link'
-+import ProjectsList from '@/components/admin/ProjectsList'
- import { listProjects } from '@/lib/db'
- 
- export default function ProjectsAdminPage() {
-@@ -11,18 +12,7 @@ export default function ProjectsAdminPage() {
-         </h1>
-         <Link href="/projects/new" className="adm-btn adm-btn-primary">new project</Link>
-       </div>
--      <ul className="divide-y divide-terminal-text-dark/10 border border-terminal-text-dark/20">
--        {projects.map((p) => (
--          <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm">
--            <span className="text-xs w-8 text-terminal-text-dark/50">{p.sortOrder}</span>
--            <Link href={`/projects/${p.id}`} className="flex-1 min-w-[10rem] hover:text-terminal-accent-cyan transition-colors">
--              {p.name}
--            </Link>
--            {p.featured && <span className="text-xs text-terminal-accent-magenta">[home]</span>}
--            <span className="text-xs text-terminal-text-dark/60">{p.status}</span>
--          </li>
--        ))}
--      </ul>
-+      <ProjectsList initial={projects} />
-     </>
+@@ -41,7 +42,7 @@ export default async function LangLayout({
+     <div className="min-h-screen flex flex-col">
+       <Header locale={locale} translations={translations} info={info} />
+       <main className="flex-1 pt-16">{children}</main>
+-      <Footer />
++      <Footer lastUpdated={formatDate(getLastUpdated())} />
+     </div>
    )
  }
-diff --git a/app/api/admin/projects/reorder/route.ts b/app/api/admin/projects/reorder/route.ts
+diff --git a/app/[lang]/page.tsx b/app/[lang]/page.tsx
+index faf82ce..0e1f95c 100644
+--- a/app/[lang]/page.tsx
++++ b/app/[lang]/page.tsx
+@@ -22,7 +22,7 @@ export default function HomePage() {
+       <Hero info={{ name: profile.name, alias: profile.alias, role: profile.role, location: profile.location, age }} stack={stack} />
+ 
+       {/* About Preview */}
+-      <section className="py-12 sm:py-16 px-4 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
++      <section id="about-preview" className="py-12 sm:py-16 px-4 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
+         <div className="max-w-6xl mx-auto">
+           <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
+             <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">whoami</span>
+diff --git a/app/api/visits/route.ts b/app/api/visits/route.ts
 new file mode 100644
-index 0000000..251895f
+index 0000000..d69acec
 --- /dev/null
-+++ b/app/api/admin/projects/reorder/route.ts
-@@ -0,0 +1,15 @@
++++ b/app/api/visits/route.ts
+@@ -0,0 +1,31 @@
 +import { NextRequest, NextResponse } from 'next/server'
-+import { guardApi } from '@/lib/auth'
-+import { reorderProjects } from '@/lib/db'
-+import { parseProjectOrder } from '@/lib/validate'
++import { bumpVisitCount, getVisitCount } from '@/lib/db'
++import { rateLimited } from '@/lib/rate-limit'
 +
 +export const runtime = 'nodejs'
 +
-+export async function PUT(req: NextRequest) {
-+  const denied = await guardApi(req)
-+  if (denied) return denied
-+  const parsed = parseProjectOrder(await req.json().catch(() => null))
-+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
-+  reorderProjects(parsed.value)
-+  return NextResponse.json({ ok: true })
-+}
-diff --git a/components/BlogFilters.tsx b/components/BlogFilters.tsx
-new file mode 100644
-index 0000000..bab70b2
---- /dev/null
-+++ b/components/BlogFilters.tsx
-@@ -0,0 +1,119 @@
-+'use client'
-+
-+import { useEffect, useRef, useState } from 'react'
-+import { useRouter, useSearchParams } from 'next/navigation'
-+
-+interface Facet {
-+  value: string
-+  label: string
-+  count: number
++/** Read-only: current site-wide total. */
++export async function GET() {
++  return NextResponse.json({ count: getVisitCount() })
 +}
 +
-+/** Search box + multi-select category/tag chips. Reads/writes the URL, page.tsx re-fetches from it. */
-+export default function BlogFilters({
-+  base,
-+  categories,
-+  tags,
-+  initialQuery,
-+}: {
-+  base: string
-+  categories: Facet[]
-+  tags: Facet[]
-+  initialQuery: string
-+}) {
-+  const router = useRouter()
-+  const searchParams = useSearchParams()
-+  const [q, setQ] = useState(initialQuery)
-+  const firstRun = useRef(true)
-+
-+  const selectedCategories = new Set(searchParams.getAll('category'))
-+  const selectedTags = new Set(searchParams.getAll('tag'))
-+
-+  function navigate(next: URLSearchParams) {
-+    const s = next.toString()
-+    router.push(s ? `${base}?${s}` : base)
++/**
++ * Called once per browser session (see Footer.tsx). This is a real, shared counter backed by
++ * SQLite — not localStorage — so every visitor sees the same number. Rate-limited per IP since
++ * it's a public, unauthenticated endpoint.
++ */
++export async function POST(req: NextRequest) {
++  const origin = req.headers.get('origin')
++  try {
++    if (!origin || new URL(origin).host !== req.headers.get('host')) throw new Error()
++  } catch {
++    return NextResponse.json({ error: 'bad origin' }, { status: 403 })
 +  }
 +
-+  // Debounced search: types into the box, URL updates ~350ms after the last keystroke.
-+  useEffect(() => {
-+    if (firstRun.current) {
-+      firstRun.current = false
-+      return
-+    }
-+    const t = setTimeout(() => {
-+      const next = new URLSearchParams(searchParams.toString())
-+      if (q.trim()) next.set('q', q.trim())
-+      else next.delete('q')
-+      navigate(next)
-+    }, 350)
-+    return () => clearTimeout(t)
-+    // eslint-disable-next-line react-hooks/exhaustive-deps
-+  }, [q])
-+
-+  function toggle(key: 'category' | 'tag', value: string) {
-+    const next = new URLSearchParams(searchParams.toString())
-+    const current = next.getAll(key)
-+    next.delete(key)
-+    const set = new Set(current)
-+    if (set.has(value)) set.delete(value)
-+    else set.add(value)
-+    set.forEach((v) => next.append(key, v))
-+    navigate(next)
++  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
++  if (rateLimited(`visit:${ip}`, 20, 60 * 60 * 1000)) {
++    return NextResponse.json({ count: getVisitCount() })
 +  }
 +
-+  function clearAll() {
-+    setQ('')
-+    router.push(base)
-+  }
-+
-+  const chip = (active: boolean) =>
-+    `text-xs px-2 py-1 border transition-colors ${
-+      active
-+        ? 'border-terminal-accent-cyan text-terminal-accent-cyan bg-terminal-accent-cyan/10'
-+        : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan'
-+    }`
-+
-+  const hasFilters = selectedCategories.size > 0 || selectedTags.size > 0 || q.trim().length > 0
-+
-+  return (
-+    <div className="mb-8 space-y-3">
-+      <div className="flex flex-wrap items-center gap-2">
-+        <span className="text-xs text-terminal-accent-cyan min-w-[80px]">search:</span>
-+        <input
-+          type="text"
-+          value={q}
-+          onChange={(e) => setQ(e.target.value)}
-+          placeholder="grep posts…"
-+          className="flex-1 min-w-[10rem] max-w-xs bg-transparent border border-terminal-text-light/20 dark:border-terminal-text-dark/20 px-2 py-1 text-sm text-terminal-text-light dark:text-terminal-text-dark placeholder:text-terminal-text-light/30 dark:placeholder:text-terminal-text-dark/30 focus:outline-none focus:border-terminal-accent-cyan"
-+        />
-+        {hasFilters && (
-+          <button onClick={clearAll} className="text-xs text-terminal-accent-red hover:text-terminal-accent-red/80">
-+            clear
-+          </button>
-+        )}
-+      </div>
-+
-+      {categories.length > 0 && (
-+        <div className="flex flex-wrap items-center gap-2">
-+          <span className="text-xs text-terminal-accent-cyan min-w-[80px]">categories:</span>
-+          {categories.map((c) => (
-+            <button key={c.value} onClick={() => toggle('category', c.value)} className={chip(selectedCategories.has(c.value))}>
-+              {c.label} ({c.count})
-+            </button>
-+          ))}
-+        </div>
-+      )}
-+
-+      {tags.length > 0 && (
-+        <div className="flex flex-wrap items-center gap-2">
-+          <span className="text-xs text-terminal-accent-cyan min-w-[80px]">tags:</span>
-+          {tags.map((t) => (
-+            <button key={t.value} onClick={() => toggle('tag', t.value)} className={chip(selectedTags.has(t.value))}>
-+              #{t.label}
-+            </button>
-+          ))}
-+        </div>
-+      )}
-+    </div>
-+  )
++  return NextResponse.json({ count: bumpVisitCount() })
 +}
-diff --git a/components/Header.tsx b/components/Header.tsx
-index b236815..ffcb73e 100644
---- a/components/Header.tsx
-+++ b/components/Header.tsx
-@@ -27,11 +27,11 @@ export default function Header({ locale, translations, info }: HeaderProps) {
- 
-   const currentPath = pathname.replace(`/${locale}`, '');
- 
-+  // Blog has its own [BLOG] shortcut button next to [INFO], so it's left out of this list.
-   const navItems = [
-     { name: 'home', path: '' },
-     { name: 'about', path: '/about' },
-     { name: 'projects', path: '/projects' },
--    { name: 'blog', path: '/blog' },
-     { name: 'contact', path: '/contact' },
-   ];
- 
-@@ -64,6 +64,18 @@ export default function Header({ locale, translations, info }: HeaderProps) {
-                 [INFO]
-               </button>
- 
-+              {/* Blog Shortcut */}
-+              <Link
-+                href={`/${locale}/blog`}
-+                className={`px-3 py-1 border transition-colors text-sm ${
-+                  isActive('/blog')
-+                    ? 'border-terminal-accent-cyan text-terminal-accent-cyan'
-+                    : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan dark:hover:border-terminal-accent-cyan'
-+                }`}
-+              >
-+                [BLOG]
-+              </Link>
-+
-               {/* Hamburger Menu */}
-               <button
-                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-@@ -84,6 +96,17 @@ export default function Header({ locale, translations, info }: HeaderProps) {
-                 [i]
-               </button>
- 
-+              <Link
-+                href={`/${locale}/blog`}
-+                className={`px-2 py-1 border text-xs ${
-+                  isActive('/blog')
-+                    ? 'border-terminal-accent-cyan text-terminal-accent-cyan'
-+                    : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20'
-+                }`}
-+              >
-+                [blog]
-+              </Link>
-+
-               <button
-                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                 className="px-2 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-xs"
-diff --git a/components/Hero.tsx b/components/Hero.tsx
-index 52108f7..862f842 100644
---- a/components/Hero.tsx
-+++ b/components/Hero.tsx
-@@ -1,15 +1,17 @@
- 'use client';
- 
- import { useEffect, useState } from 'react';
-+import Link from 'next/link';
- import AsciiArt from './AsciiArt';
- import type { StackGroup } from '@/lib/settings';
- 
- interface HeroProps {
-   info: { name: string; alias: string; role: string; location: string; age: number };
-   stack: StackGroup[];
-+  locale?: string;
+diff --git a/app/globals.css b/app/globals.css
+index 035abac..176642c 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -91,6 +91,37 @@ body {
+   opacity: 0.5;
  }
  
--export default function Hero({ info, stack }: HeroProps) {
-+export default function Hero({ info, stack, locale = 'en' }: HeroProps) {
++/* ---- Blog code blocks (rehype-highlight) - colors match the Everforest accent palette ---- */
++.hljs { color: #d3c6aa; background: transparent; }
++.hljs-comment,
++.hljs-quote { color: #859289; font-style: italic; }
++.hljs-keyword,
++.hljs-selector-tag,
++.hljs-literal,
++.hljs-doctag { color: #e67e80; }
++.hljs-string,
++.hljs-attr,
++.hljs-regexp,
++.hljs-addition { color: #a7c080; }
++.hljs-number,
++.hljs-symbol,
++.hljs-bullet { color: #d699b6; }
++.hljs-title,
++.hljs-title.function_,
++.hljs-title.class_,
++.hljs-section { color: #7fbbb3; }
++.hljs-type,
++.hljs-class .hljs-title,
++.hljs-built_in { color: #dbbc7f; }
++.hljs-variable,
++.hljs-template-variable,
++.hljs-attribute { color: #e69875; }
++.hljs-meta,
++.hljs-meta .hljs-keyword { color: #83c092; }
++.hljs-deletion { color: #e67e80; }
++.hljs-emphasis { font-style: italic; }
++.hljs-strong { font-weight: 700; }
++
+ /* ---- Editor (admin.tirok.ir) ---- */
+ @layer components {
+   .adm-input {
+diff --git a/components/Footer.tsx b/components/Footer.tsx
+index dfb3399..7a90cb3 100644
+--- a/components/Footer.tsx
++++ b/components/Footer.tsx
+@@ -2,35 +2,29 @@
+ 
+ import { useEffect, useState } from 'react';
+ 
+-export default function Footer() {
+-  const [visitorCount, setVisitorCount] = useState<number>(547);
+-
+-  useEffect(() => {
+-    // Get visitor count from localStorage
+-    const storedCount = localStorage.getItem('visitorCount');
+-
+-    if (storedCount) {
+-      setVisitorCount(parseInt(storedCount));
+-    } else {
+-      // First visit, set to 547
+-      localStorage.setItem('visitorCount', '547');
+-      setVisitorCount(547);
+-    }
++interface FooterProps {
++  /** Formatted date of the most recent published post, or '' if there isn't one yet. */
++  lastUpdated?: string;
++}
+ 
+-    // Increment count on each visit
+-    const incrementCount = () => {
+-      const currentCount = parseInt(localStorage.getItem('visitorCount') || '547');
+-      const newCount = currentCount + 1;
+-      localStorage.setItem('visitorCount', newCount.toString());
+-      setVisitorCount(newCount);
+-    };
++export default function Footer({ lastUpdated }: FooterProps) {
++  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+ 
+-    // Only increment once per session
++  useEffect(() => {
++    // Real, site-wide counter backed by the database - every visitor sees the same number.
++    // Only counted once per tab session, same as before.
+     const hasVisited = sessionStorage.getItem('hasVisited');
+-    if (!hasVisited) {
+-      incrementCount();
+-      sessionStorage.setItem('hasVisited', 'true');
+-    }
++    const method = hasVisited ? 'GET' : 'POST';
++
++    fetch('/api/visits', { method })
++      .then((res) => res.json())
++      .then((data: { count: number }) => {
++        if (typeof data.count === 'number') setVisitorCount(data.count);
++        if (!hasVisited) sessionStorage.setItem('hasVisited', 'true');
++      })
++      .catch(() => {
++        // Offline or the API is unreachable - just don't show a (possibly wrong) number.
++      });
+   }, []);
+ 
+   return (
+@@ -38,11 +32,14 @@ export default function Footer() {
+       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+         <div className="text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60 font-mono flex flex-wrap gap-3">
+           <span>
+-            <span className="text-terminal-accent-red">$</span> system status: online | last updated: 2025
+-          </span>
+-          <span className="text-terminal-accent-cyan">
+-            | visitors: <span className="text-terminal-accent-yellow">{visitorCount.toLocaleString()}</span>
++            <span className="text-terminal-accent-red">$</span> system status: online
++            {lastUpdated && <> | last updated: {lastUpdated}</>}
+           </span>
++          {visitorCount !== null && (
++            <span className="text-terminal-accent-cyan">
++              | visitors: <span className="text-terminal-accent-yellow">{visitorCount.toLocaleString()}</span>
++            </span>
++          )}
+         </div>
+       </div>
+     </footer>
+diff --git a/components/Header.tsx b/components/Header.tsx
+index b236815..cfc6cd6 100644
+--- a/components/Header.tsx
++++ b/components/Header.tsx
+@@ -1,6 +1,6 @@
+ 'use client';
+ 
+-import { useState } from 'react';
++import { useEffect, useState } from 'react';
+ import Link from 'next/link';
+ import { usePathname } from 'next/navigation';
+ import type { Locale } from '@/lib/i18n';
+@@ -40,6 +40,19 @@ export default function Header({ locale, translations, info }: HeaderProps) {
+     return pathname === fullPath || (path !== '' && pathname.startsWith(`${fullPath}/`));
+   };
+ 
++  // Close the menu/info card on Escape, same as clicking outside them.
++  useEffect(() => {
++    if (!isMenuOpen && !isInfoCardOpen) return;
++    const onKey = (e: KeyboardEvent) => {
++      if (e.key === 'Escape') {
++        setIsMenuOpen(false);
++        setIsInfoCardOpen(false);
++      }
++    };
++    window.addEventListener('keydown', onKey);
++    return () => window.removeEventListener('keydown', onKey);
++  }, [isMenuOpen, isInfoCardOpen]);
++
+   return (
+     <>
+       <header className="fixed top-0 left-0 right-0 z-50 border-b border-terminal-text-dark/20 dark:border-terminal-text-dark/20 bg-terminal-bg-light/95 dark:bg-terminal-bg-dark/95 backdrop-blur-sm">
+@@ -121,6 +134,15 @@ export default function Header({ locale, translations, info }: HeaderProps) {
+         )}
+       </header>
+ 
++      {/* Backdrop: click outside the open menu to close it, same affordance as the [INFO] card. */}
++      {isMenuOpen && (
++        <div
++          className="fixed inset-0 z-40 bg-black/50"
++          onClick={() => setIsMenuOpen(false)}
++          aria-hidden
++        />
++      )}
++
+       {/* Info Card Modal */}
+       {isInfoCardOpen && (
+         <div
+diff --git a/components/Hero.tsx b/components/Hero.tsx
+index 52108f7..99d082d 100644
+--- a/components/Hero.tsx
++++ b/components/Hero.tsx
+@@ -9,20 +9,32 @@ interface HeroProps {
+   stack: StackGroup[];
+ }
+ 
++// Fake boot sequence, shown once before the neofetch panel reveals itself.
++const BOOT_LINES = [
++  { text: 'booting session…', status: 'ok' as const },
++  { text: 'mounting ~/projects', status: 'ok' as const },
++  { text: 'starting sshd, cron, caffeine.service', status: 'ok' as const },
++  { text: 'connection established', status: 'ok' as const },
++];
++
+ export default function Hero({ info, stack }: HeroProps) {
    const [isVisible, setIsVisible] = useState(false);
++  const [bootLine, setBootLine] = useState(0);
++  const [bootDone, setBootDone] = useState(false);
    const [typingComplete, setTypingComplete] = useState(false);
  
-@@ -48,15 +50,24 @@ export default function Hero({ info, stack }: HeroProps) {
+   useEffect(() => {
+     setIsVisible(true);
+ 
+-    const timer = setTimeout(() => {
+-      setTypingComplete(true);
+-    }, 3000);
++    // Reveal one boot line at a time, then hand off to the neofetch panel's own reveal.
++    const timers: ReturnType<typeof setTimeout>[] = [];
++    BOOT_LINES.forEach((_, i) => {
++      timers.push(setTimeout(() => setBootLine(i + 1), 220 * (i + 1)));
++    });
++    timers.push(setTimeout(() => setBootDone(true), 220 * BOOT_LINES.length + 350));
++    timers.push(setTimeout(() => setTypingComplete(true), 220 * BOOT_LINES.length + 350 + 2400));
+ 
+-    return () => {
+-      clearTimeout(timer);
+-    };
++    return () => timers.forEach(clearTimeout);
+   }, []);
+ 
+   const [first, ...rest] = info.name.toLowerCase().split(/\s+/);
+@@ -41,15 +53,44 @@ export default function Hero({ info, stack }: HeroProps) {
+   // The first few groups of the stack list, shortened to fit the neofetch panel.
+   const stackInfo = stack.slice(0, 3).map((g) => ({ category: g.category, items: g.items.slice(0, 4) }));
+ 
++  const scrollToNext = () => {
++    document.getElementById('about-preview')?.scrollIntoView({ behavior: 'smooth' });
++  };
++
+   return (
+-    <section className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-8 sm:py-12 px-4">
++    <section className="relative min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center py-8 sm:py-12 px-4 overflow-hidden">
++      {/* Ambient glow behind the terminal panel - subtle, theme-matched, respects prefers-reduced-motion via the global rule. */}
++      <div
++        aria-hidden
++        className="pointer-events-none absolute inset-0 flex items-center justify-center -z-10"
++      >
++        <div className="w-[36rem] h-[36rem] max-w-[90vw] max-h-[90vw] rounded-full bg-gradient-to-br from-terminal-accent-blue/20 via-terminal-accent-purple/10 to-terminal-accent-cyan/10 blur-3xl animate-pulse-slow" />
++      </div>
++
+       <div
+         className={`w-full max-w-6xl transition-opacity duration-1000 ${
            isVisible ? 'opacity-100' : 'opacity-0'
          }`}
        >
--        {/* Terminal Header */}
--        <div className="mb-4 overflow-x-auto">
--          <div className="min-w-max">
--            <span className="text-terminal-accent-red text-xs sm:text-sm">$</span>
--            <span className="text-terminal-accent-green text-xs sm:text-sm ml-2">neofetch</span>
--            <span className="text-terminal-text-light dark:text-terminal-text-dark text-xs sm:text-sm"> --config </span>
--            <span className="text-terminal-accent-blue text-xs sm:text-sm">~/.config/neofetch/tirok.conf</span>
-+        <div className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 terminal-window p-4 sm:p-6 pt-8">
-+          {/* Window Title Bar */}
-+          <div className="absolute top-0 left-0 right-0 h-6 border-b border-terminal-text-light/20 dark:border-terminal-text-dark/20 flex items-center px-2 gap-2">
-+            <span className="text-xs text-terminal-accent-red">●</span>
-+            <span className="text-xs text-terminal-accent-yellow">●</span>
-+            <span className="text-xs text-terminal-accent-green">●</span>
-+            <span className="text-xs ml-2 text-terminal-text-light/60 dark:text-terminal-text-dark/60">tirok@web: ~</span>
-+          </div>
-+
-+          {/* Terminal Header */}
-+          <div className="mb-4 overflow-x-auto">
-+            <div className="min-w-max">
-+              <span className="text-terminal-accent-red text-xs sm:text-sm">$</span>
-+              <span className="text-terminal-accent-green text-xs sm:text-sm ml-2">neofetch</span>
-+              <span className="text-terminal-text-light dark:text-terminal-text-dark text-xs sm:text-sm"> --config </span>
-+              <span className="text-terminal-accent-blue text-xs sm:text-sm">~/.config/neofetch/tirok.conf</span>
++        {/* Boot sequence */}
++        <div className="mb-3 space-y-1 font-mono text-[11px] sm:text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60">
++          {BOOT_LINES.map((line, i) => (
++            <div
++              key={line.text}
++              className="flex items-center gap-2 transition-opacity duration-300"
++              style={{ opacity: bootLine > i ? 1 : 0 }}
++            >
++              <span className="text-terminal-accent-green">[ok]</span>
++              <span>{line.text}</span>
 +            </div>
-           </div>
--        </div>
++          ))}
++        </div>
++
+         {/* Terminal Header */}
+-        <div className="mb-4 overflow-x-auto">
++        <div
++          className="mb-4 overflow-x-auto transition-opacity duration-500"
++          style={{ opacity: bootDone ? 1 : 0 }}
++        >
+           <div className="min-w-max">
+             <span className="text-terminal-accent-red text-xs sm:text-sm">$</span>
+             <span className="text-terminal-accent-green text-xs sm:text-sm ml-2">neofetch</span>
+@@ -60,7 +101,10 @@ export default function Hero({ info, stack }: HeroProps) {
  
          <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-6 sm:gap-8 lg:gap-12">
            {/* ASCII Art */}
-@@ -159,6 +170,30 @@ export default function Hero({ info, stack }: HeroProps) {
+-          <div className="flex justify-center lg:justify-start">
++          <div
++            className="flex justify-center lg:justify-start overflow-x-auto transition-opacity duration-500"
++            style={{ opacity: bootDone ? 1 : 0 }}
++          >
+             <div className="bg-gradient-to-r from-terminal-accent-blue via-terminal-accent-purple to-terminal-accent-magenta bg-clip-text text-transparent">
+               <AsciiArt />
              </div>
+@@ -76,9 +120,9 @@ export default function Hero({ info, stack }: HeroProps) {
+                 <div
+                   className="flex flex-wrap gap-2 transition-all duration-500"
+                   style={{
+-                    transitionDelay: `${index * 100}ms`,
+-                    opacity: isVisible ? 1 : 0,
+-                    transform: isVisible ? 'translateX(0)' : 'translateX(-20px)',
++                    transitionDelay: bootDone ? `${index * 100}ms` : '0ms',
++                    opacity: bootDone ? 1 : 0,
++                    transform: bootDone ? 'translateX(0)' : 'translateX(-20px)',
+                   }}
+                 >
+                   <span className="text-terminal-accent-cyan font-semibold min-w-[100px]">
+@@ -95,9 +139,9 @@ export default function Hero({ info, stack }: HeroProps) {
+               <div
+                 className="transition-all duration-500"
+                 style={{
+-                  transitionDelay: `${systemInfo.length * 100}ms`,
+-                  opacity: isVisible ? 1 : 0,
+-                  transform: isVisible ? 'translateX(0)' : 'translateX(-20px)',
++                  transitionDelay: bootDone ? `${systemInfo.length * 100}ms` : '0ms',
++                  opacity: bootDone ? 1 : 0,
++                  transform: bootDone ? 'translateX(0)' : 'translateX(-20px)',
+                 }}
+               >
+                 <div className="flex gap-2 mb-2">
+@@ -138,10 +182,10 @@ export default function Hero({ info, stack }: HeroProps) {
+                 ].map((item, i) => (
+                   <span
+                     key={i}
+-                    className={`${item.color} text-2xl transition-all duration-300`}
++                    className={`${item.color} text-2xl transition-all duration-300 hover:scale-125 cursor-default`}
+                     style={{
+-                      transitionDelay: `${(systemInfo.length + stackInfo.length + i) * 100}ms`,
+-                      opacity: isVisible ? 1 : 0,
++                      transitionDelay: bootDone ? `${(systemInfo.length + stackInfo.length + i) * 100}ms` : '0ms',
++                      opacity: bootDone ? 1 : 0,
+                     }}
+                   >
+                     {item.char}
+@@ -160,6 +204,19 @@ export default function Hero({ info, stack }: HeroProps) {
            </div>
          </div>
-+        </div>
-+
-+        {/* Quick nav: keeps the hero useful instead of just decorative */}
-+        <div
-+          className="mt-4 flex flex-wrap items-center gap-x-1 gap-y-2 text-xs sm:text-sm font-mono transition-all duration-500"
-+          style={{ transitionDelay: '900ms', opacity: isVisible ? 1 : 0 }}
-+        >
-+          <span className="text-terminal-accent-red">$</span>
-+          <span className="text-terminal-accent-green">./explore.sh</span>
-+          {[
-+            { flag: '--about', href: `/${locale}/about` },
-+            { flag: '--projects', href: `/${locale}/projects` },
-+            { flag: '--blog', href: `/${locale}/blog` },
-+            { flag: '--contact', href: `/${locale}/contact` },
-+          ].map((item) => (
-+            <Link
-+              key={item.flag}
-+              href={item.href}
-+              className="px-2 py-0.5 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-terminal-accent-yellow hover:border-terminal-accent-cyan hover:text-terminal-accent-cyan transition-colors"
-+            >
-+              {item.flag}
-+            </Link>
-+          ))}
-+        </div>
        </div>
++
++      {/* Scroll cue */}
++      <button
++        type="button"
++        onClick={scrollToNext}
++        aria-label="Scroll to next section"
++        className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-terminal-accent-cyan/70 hover:text-terminal-accent-cyan transition-all duration-700 ${
++          typingComplete ? 'opacity-100' : 'opacity-0'
++        }`}
++      >
++        <span className="text-[10px] sm:text-xs font-mono tracking-widest">scroll</span>
++        <span className="animate-bounce text-sm">▼</span>
++      </button>
      </section>
    );
-diff --git a/components/StackDisplay.tsx b/components/StackDisplay.tsx
-index 7c66f35..445e319 100644
---- a/components/StackDisplay.tsx
-+++ b/components/StackDisplay.tsx
-@@ -3,9 +3,9 @@ import type { StackGroup } from '@/lib/settings';
+ }
+diff --git a/components/Markdown.tsx b/components/Markdown.tsx
+index 5c49e20..731a45e 100644
+--- a/components/Markdown.tsx
++++ b/components/Markdown.tsx
+@@ -1,8 +1,42 @@
+ import ReactMarkdown, { type Components } from 'react-markdown'
+ import remarkGfm from 'remark-gfm'
+-import rehypeSanitize from 'rehype-sanitize'
++import rehypeHighlight from 'rehype-highlight'
++import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
+ import rehypeSlug from 'rehype-slug'
  
- export default function StackDisplay({ stack }: { stack: StackGroup[] }) {
-   return (
--    <section className="py-16 px-4">
-+    <section className="py-10 px-4">
-       <div className="max-w-6xl mx-auto">
--        <div className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-6 terminal-window">
-+        <div className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-4 sm:p-6 pt-8 terminal-window">
-           {/* Window Title */}
-           <div className="absolute top-0 left-0 right-0 h-6 border-b border-terminal-text-light/20 dark:border-terminal-text-dark/20 flex items-center px-2 gap-2">
-             <span className="text-xs text-terminal-accent-purple">●</span>
-@@ -14,35 +14,36 @@ export default function StackDisplay({ stack }: { stack: StackGroup[] }) {
-             <span className="text-xs ml-2">stack_config.conf</span>
-           </div>
- 
--          <div className="mt-4">
--            <h2 className="text-xl sm:text-2xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-6">
--              <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">cat</span> <span className="text-terminal-accent-blue">stack_overview</span>
--            </h2>
-+          <h2 className="text-xl sm:text-2xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">
-+            <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">cat</span> <span className="text-terminal-accent-blue">stack_overview</span>
-+          </h2>
- 
--            <div className="space-y-6 text-sm sm:text-base font-mono">
--              {stack.map((group) => (
--                <div key={group.category}>
--                  <div className="text-terminal-accent-blue font-semibold mb-2">
--                    [{group.category.toUpperCase()}]
--                  </div>
--                  <div className="pl-4 space-y-1">
--                    {group.items.map((tech, index) => (
--                      <div key={index} className="text-terminal-text-dark flex items-center gap-2">
--                        <span className="text-terminal-accent-purple">→</span>
--                        <TechIcon name={tech} size={20} />
--                        <span>{tech}</span>
--                      </div>
--                    ))}
--                  </div>
--                </div>
--              ))}
--
--              <div className="pt-4 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
--                <span className="text-terminal-text-light/60 dark:text-terminal-text-dark/60 text-xs">
--                  # Total packages: {stack.reduce((n, g) => n + g.items.length, 0)}
-+          {/* Category chips, wrapped inline instead of one long vertical list */}
-+          <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm font-mono">
-+            {stack.map((group) => (
-+              <div key={group.category} className="flex items-start gap-2">
-+                <span className="text-terminal-accent-blue font-semibold whitespace-nowrap pt-1">
-+                  [{group.category.toUpperCase()}]
-                 </span>
-+                <div className="flex flex-wrap gap-1.5 max-w-md">
-+                  {group.items.map((tech, index) => (
-+                    <span
-+                      key={index}
-+                      className="inline-flex items-center gap-1 px-2 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-terminal-text-dark text-xs"
-+                    >
-+                      <TechIcon name={tech} size={14} />
-+                      {tech}
-+                    </span>
-+                  ))}
-+                </div>
-               </div>
--            </div>
-+            ))}
-+          </div>
-+
-+          <div className="mt-4 pt-3 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
-+            <span className="text-terminal-text-light/60 dark:text-terminal-text-dark/60 text-xs">
-+              # Total packages: {stack.reduce((n, g) => n + g.items.length, 0)}
-+            </span>
-           </div>
-         </div>
-       </div>
-diff --git a/components/admin/ProjectsList.tsx b/components/admin/ProjectsList.tsx
-new file mode 100644
-index 0000000..c808ffb
---- /dev/null
-+++ b/components/admin/ProjectsList.tsx
-@@ -0,0 +1,87 @@
-+'use client'
-+
-+import { useRef, useState } from 'react'
-+import Link from 'next/link'
-+import type { Project } from '@/lib/db'
-+
-+/** Reorderable list of projects (drag & drop). Order is saved to the server on drop. */
-+export default function ProjectsList({ initial }: { initial: Project[] }) {
-+  const [projects, setProjects] = useState(initial)
-+  const [saving, setSaving] = useState(false)
-+  const [error, setError] = useState('')
-+  const dragIndex = useRef<number | null>(null)
-+  const [overIndex, setOverIndex] = useState<number | null>(null)
-+
-+  async function save(order: Project[]) {
-+    setSaving(true)
-+    setError('')
-+    const res = await fetch('/api/admin/projects/reorder', {
-+      method: 'PUT',
-+      headers: { 'Content-Type': 'application/json' },
-+      body: JSON.stringify({ ids: order.map((p) => p.id) }),
-+    }).catch(() => null)
-+    if (!res?.ok) setError('could not save the new order')
-+    setSaving(false)
-+  }
-+
-+  function onDrop(dropIndex: number) {
-+    const from = dragIndex.current
-+    dragIndex.current = null
-+    setOverIndex(null)
-+    if (from === null || from === dropIndex) return
-+    const next = [...projects]
-+    const [moved] = next.splice(from, 1)
-+    next.splice(dropIndex, 0, moved)
-+    setProjects(next)
-+    save(next)
-+  }
-+
-+  return (
-+    <div>
-+      <div className="flex items-center justify-between mb-2 text-xs text-terminal-text-dark/50">
-+        <span>drag rows by the handle to reorder</span>
-+        {saving && <span className="text-terminal-accent-cyan">saving…</span>}
-+      </div>
-+      {error && <p className="text-xs text-terminal-accent-red mb-2">{error}</p>}
-+      <ul className="divide-y divide-terminal-text-dark/10 border border-terminal-text-dark/20">
-+        {projects.map((p, index) => (
-+          <li
-+            key={p.id}
-+            onDragOver={(e) => {
-+              e.preventDefault()
-+              if (overIndex !== index) setOverIndex(index)
-+            }}
-+            onDrop={(e) => {
-+              e.preventDefault()
-+              onDrop(index)
-+            }}
-+            className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm transition-colors ${
-+              overIndex === index ? 'bg-terminal-accent-cyan/10' : ''
-+            }`}
-+          >
-+            <span
-+              draggable
-+              onDragStart={() => {
-+                dragIndex.current = index
-+              }}
-+              onDragEnd={() => {
-+                dragIndex.current = null
-+                setOverIndex(null)
-+              }}
-+              title="drag to reorder"
-+              className="cursor-grab active:cursor-grabbing text-terminal-text-dark/40 hover:text-terminal-accent-cyan select-none px-1"
-+            >
-+              ⠿
-+            </span>
-+            <span className="text-xs w-6 text-terminal-text-dark/50">{index + 1}</span>
-+            <Link href={`/projects/${p.id}`} className="flex-1 min-w-[10rem] hover:text-terminal-accent-cyan transition-colors">
-+              {p.name}
-+            </Link>
-+            {p.featured && <span className="text-xs text-terminal-accent-magenta">[home]</span>}
-+            <span className="text-xs text-terminal-text-dark/60">{p.status}</span>
-+          </li>
-+        ))}
-+      </ul>
-+    </div>
-+  )
++// rehype-highlight adds classNames like "language-js" (on <code>) and "hljs-keyword" etc. (on
++// inner <span>s). The default sanitize schema doesn't know about those, so it strips them and
++// every code block would render in one flat color - extend the schema to allow them through.
++const sanitizeSchema = {
++  ...defaultSchema,
++  attributes: {
++    ...defaultSchema.attributes,
++    code: ['className'],
++    span: ['className'],
++  },
 +}
++
++// Accepts a bare 11-char video id or a full youtube.com / youtu.be URL (watch, embed, shorts).
++function extractYouTubeId(input: string): string | null {
++  const trimmed = input.trim()
++  if (/^[\w-]{11}$/.test(trimmed)) return trimmed
++  try {
++    const url = new URL(trimmed)
++    if (url.hostname === 'youtu.be') return url.pathname.slice(1).split('/')[0] || null
++    if (url.hostname.includes('youtube.com')) {
++      if (url.pathname === '/watch') return url.searchParams.get('v')
++      if (url.pathname.startsWith('/embed/')) return url.pathname.split('/embed/')[1]?.split('/')[0] || null
++      if (url.pathname.startsWith('/shorts/')) return url.pathname.split('/shorts/')[1]?.split('/')[0] || null
++    }
++  } catch {
++    /* not a URL - and not a bare id either, so give up below */
++  }
++  return null
++}
++
++const textOf = (node: unknown): string =>
++  Array.isArray(node) ? node.map(textOf).join('') : typeof node === 'string' ? node : ''
++
+ // dir="auto" lets Persian paragraphs render right-to-left while English ones stay left-to-right.
+ const components: Components = {
+   h1: ({ node: _node, children, ...p }) => (
+@@ -61,14 +95,36 @@ const components: Components = {
+       className="my-6 max-w-full h-auto border border-terminal-text-light/20 dark:border-terminal-text-dark/20"
+     />
+   ),
+-  pre: ({ children }) => (
+-    <pre
+-      dir="ltr"
+-      className="my-6 p-4 overflow-x-auto text-sm border border-terminal-text-light/20 dark:border-terminal-text-dark/20 bg-terminal-text-light/5 dark:bg-black/30"
+-    >
+-      {children}
+-    </pre>
+-  ),
++  // Fenced ```youtube blocks (a bare video id or URL) become a real embed instead of a code block.
++  pre: ({ children }) => {
++    const child = Array.isArray(children) ? children[0] : children
++    const codeProps = (child as { props?: { className?: string; children?: unknown } } | null)?.props
++    if (codeProps?.className?.split(/\s+/).includes('language-youtube')) {
++      const id = extractYouTubeId(textOf(codeProps.children))
++      if (id) {
++        return (
++          <div className="my-6 aspect-video w-full overflow-hidden border border-terminal-text-light/20 dark:border-terminal-text-dark/20 bg-black">
++            <iframe
++              src={`https://www.youtube-nocookie.com/embed/${id}`}
++              title="Embedded YouTube video"
++              className="w-full h-full"
++              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
++              allowFullScreen
++              loading="lazy"
++            />
++          </div>
++        )
++      }
++    }
++    return (
++      <pre
++        dir="ltr"
++        className="my-6 p-4 overflow-x-auto text-sm border border-terminal-text-light/20 dark:border-terminal-text-dark/20 bg-terminal-text-light/5 dark:bg-black/30"
++      >
++        {children}
++      </pre>
++    )
++  },
+   code: ({ className, children }) =>
+     className ? (
+       <code className={className}>{children}</code>
+@@ -94,7 +150,11 @@ const components: Components = {
+ 
+ export default function Markdown({ children }: { children: string }) {
+   return (
+-    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize, rehypeSlug]} components={components}>
++    <ReactMarkdown
++      remarkPlugins={[remarkGfm]}
++      rehypePlugins={[[rehypeHighlight, { ignoreMissing: true }], [rehypeSanitize, sanitizeSchema], rehypeSlug]}
++      components={components}
++    >
+       {children}
+     </ReactMarkdown>
+   )
+diff --git a/components/ProjectCard.tsx b/components/ProjectCard.tsx
+index dae8e9e..023852f 100644
+--- a/components/ProjectCard.tsx
++++ b/components/ProjectCard.tsx
+@@ -14,7 +14,7 @@ interface ProjectCardProps {
+ 
+ export default function ProjectCard({ project }: ProjectCardProps) {
+   const statusColors = {
+-    active: 'text-terminal-text-dark',
++    active: 'text-terminal-accent-green',
+     archived: 'text-terminal-accent-cyan',
+     wip: 'text-terminal-accent-red',
+   };
+diff --git a/components/admin/PostEditor.tsx b/components/admin/PostEditor.tsx
+index 1e199ae..d4dbf67 100644
+--- a/components/admin/PostEditor.tsx
++++ b/components/admin/PostEditor.tsx
+@@ -257,6 +257,17 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
+             <button type="button" className={`${toolBtn} italic`} onClick={() => wrap('*', '*', 'italic')} title="Italic">I</button>
+             <button type="button" className={toolBtn} onClick={() => wrap('`', '`', 'code')} title="Inline code">{'`c`'}</button>
+             <button type="button" className={toolBtn} onClick={() => wrap('\n```\n', '\n```\n', 'code')} title="Code block">{'```'}</button>
++            <button
++              type="button"
++              className={toolBtn}
++              title="Embed a YouTube video"
++              onClick={() => {
++                const input = window.prompt('YouTube video URL or ID:')
++                if (input?.trim()) insertBlock(`\`\`\`youtube\n${input.trim()}\n\`\`\``)
++              }}
++            >
++              ▶ youtube
++            </button>
+             <button type="button" className={toolBtn} onClick={() => prefixLines('> ')} title="Quote">quote</button>
+             <button type="button" className={toolBtn} onClick={() => prefixLines('- ')} title="Bullet list">list</button>
+             <button type="button" className={toolBtn} onClick={() => prefixLines('1. ')} title="Numbered list">1.</button>
 diff --git a/lib/db.ts b/lib/db.ts
-index 4ac6477..1faa813 100644
+index 4ac6477..a0a2ed2 100644
 --- a/lib/db.ts
 +++ b/lib/db.ts
-@@ -191,23 +191,36 @@ function hydrate(rows: PostRow[]): Post[] {
- 
- export function listPosts(opts: {
-   publishedOnly?: boolean
--  tag?: string
--  category?: string
-+  tag?: string | string[]
-+  category?: string | string[]
-+  q?: string
-   limit?: number
- } = {}): PostSummary[] {
-   const where: string[] = []
-   const args: (string | number)[] = []
-   if (opts.publishedOnly) where.push(`p.status = 'published'`)
--  if (opts.category) {
--    where.push('c.slug = ?')
--    args.push(opts.category)
-+
-+  const categories = ([] as string[]).concat(opts.category ?? []).filter(Boolean)
-+  if (categories.length) {
-+    where.push(`c.slug IN (${categories.map(() => '?').join(',')})`)
-+    args.push(...categories)
-   }
--  if (opts.tag) {
-+
-+  const tags = ([] as string[]).concat(opts.tag ?? []).filter(Boolean)
-+  if (tags.length) {
-     where.push(
--      `EXISTS (SELECT 1 FROM post_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.post_id = p.id AND t.name = ?)`,
-+      `EXISTS (SELECT 1 FROM post_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.post_id = p.id AND t.name IN (${tags.map(() => '?').join(',')}))`,
-     )
--    args.push(opts.tag)
-+    args.push(...tags)
-+  }
-+
-+  const q = opts.q?.trim().slice(0, 100)
-+  if (q) {
-+    where.push(`(p.title LIKE ? ESCAPE '\\' OR p.excerpt LIKE ? ESCAPE '\\' OR p.content LIKE ? ESCAPE '\\')`)
-+    const like = `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`
-+    args.push(like, like, like)
-   }
-+
-   const sql = `SELECT ${POST_COLS} ${POST_FROM}
-     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-     ORDER BY COALESCE(p.published_at, p.updated_at) DESC, p.id DESC LIMIT ?`
-@@ -404,6 +417,15 @@ export function deleteProject(id: number): boolean {
-   return getDb().prepare('DELETE FROM projects WHERE id = ?').run(id).changes > 0
+@@ -422,6 +422,33 @@ export function saveSettings(value: SiteSettings): SiteSettings {
+   return getSettings()
  }
  
-+/** Sets sort_order to match the given id order (index in the array = new position). Ignores unknown ids. */
-+export function reorderProjects(ids: number[]): void {
++/* ----------------------------------------------------------------- visits */
++
++// Real, site-wide counter (shared table, not per-browser localStorage). Starts at 547
++// to keep the number the site has always shown; callers increment once per session.
++export function bumpVisitCount(): number {
 +  const db = getDb()
-+  const update = db.prepare('UPDATE projects SET sort_order = ? WHERE id = ?')
-+  db.transaction((list: number[]) => {
-+    list.forEach((id, index) => update.run(index, id))
-+  })(ids)
++  const row = db.prepare("SELECT value FROM settings WHERE key = 'visits'").get() as { value: string } | undefined
++  const current = row ? parseInt(row.value, 10) || 0 : 547
++  const next = current + 1
++  db.prepare("INSERT INTO settings (key, value) VALUES ('visits', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
++    .run(String(next))
++  return next
 +}
 +
- /* --------------------------------------------------------------- settings */
- 
- export function getSettings(): SiteSettings {
-diff --git a/lib/validate.ts b/lib/validate.ts
-index d6a4360..e085a0d 100644
---- a/lib/validate.ts
-+++ b/lib/validate.ts
-@@ -81,6 +81,16 @@ export function parseProjectInput(body: unknown): Result<ProjectInput> {
-   return { ok: true, value: { name, description, github, status: b.status, stack, sortOrder, featured: b.featured === true } }
- }
- 
-+export function parseProjectOrder(body: unknown): Result<number[]> {
-+  if (!body || typeof body !== 'object') return { ok: false, error: 'invalid body' }
-+  const ids = (body as Record<string, unknown>).ids
-+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200) {
-+    return { ok: false, error: 'ids must be a non-empty array' }
-+  }
-+  if (!ids.every((v) => Number.isInteger(v))) return { ok: false, error: 'ids must be integers' }
-+  return { ok: true, value: ids as number[] }
++export function getVisitCount(): number {
++  const row = getDb().prepare("SELECT value FROM settings WHERE key = 'visits'").get() as { value: string } | undefined
++  return row ? parseInt(row.value, 10) || 547 : 547
 +}
 +
- /* --------------------------------------------------------------- settings */
++/** ISO timestamp of the most recently published post, or null if there isn't one yet. */
++export function getLastUpdated(): string | null {
++  const row = getDb()
++    .prepare("SELECT MAX(updated_at) AS d FROM posts WHERE status = 'published'")
++    .get() as { d: string | null }
++  return row.d
++}
++
+ /* --------------------------------------------------------------- comments */
  
- const line = (v: unknown, max: number, label: string, required = true): Result<string> => {
+ export interface Comment {
 diff --git a/package-lock.json b/package-lock.json
-index c762a0d..398f8b0 100644
+index c762a0d..b833250 100644
 --- a/package-lock.json
 +++ b/package-lock.json
-@@ -43,13 +43,37 @@
+@@ -13,6 +13,7 @@
+         "react": "^18.3.0",
+         "react-dom": "^18.3.0",
+         "react-markdown": "^10.1.0",
++        "rehype-highlight": "^7.0.2",
+         "rehype-sanitize": "^6.0.0",
+         "rehype-slug": "^6.0.0",
+         "remark-gfm": "^4.0.1"
+@@ -43,13 +44,37 @@
          "url": "https://github.com/sponsors/sindresorhus"
        }
      },
@@ -763,7 +687,7 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "tslib": "^2.4.0"
        }
-@@ -991,7 +1015,6 @@
+@@ -991,7 +1016,6 @@
        "resolved": "https://registry.npmjs.org/@types/react/-/react-18.3.31.tgz",
        "integrity": "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw==",
        "license": "MIT",
@@ -771,7 +695,7 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "@types/prop-types": "*",
          "csstype": "^3.2.2"
-@@ -1058,7 +1081,6 @@
+@@ -1058,7 +1082,6 @@
        "integrity": "sha512-CZ4nMxWwgu1HEEFNkeaCptra9QCtkmKdgf3sWh1rl1trIhmxLilgTV4cwcbQ4wemnT4sWQN8CaKOmdYx+g2gMA==",
        "dev": true,
        "license": "MIT",
@@ -779,7 +703,7 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "@typescript-eslint/scope-manager": "8.65.0",
          "@typescript-eslint/types": "8.65.0",
-@@ -1573,6 +1595,18 @@
+@@ -1573,6 +1596,18 @@
          "node": ">=14.0.0"
        }
      },
@@ -798,7 +722,7 @@ index c762a0d..398f8b0 100644
      "node_modules/@unrs/resolver-binding-wasm32-wasi/node_modules/@emnapi/runtime": {
        "version": "1.10.0",
        "resolved": "https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.10.0.tgz",
-@@ -1584,6 +1618,17 @@
+@@ -1584,6 +1619,17 @@
          "tslib": "^2.4.0"
        }
      },
@@ -816,7 +740,7 @@ index c762a0d..398f8b0 100644
      "node_modules/@unrs/resolver-binding-win32-arm64-msvc": {
        "version": "1.12.2",
        "resolved": "https://registry.npmjs.org/@unrs/resolver-binding-win32-arm64-msvc/-/resolver-binding-win32-arm64-msvc-1.12.2.tgz",
-@@ -1632,7 +1677,6 @@
+@@ -1632,7 +1678,6 @@
        "integrity": "sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==",
        "dev": true,
        "license": "MIT",
@@ -824,7 +748,7 @@ index c762a0d..398f8b0 100644
        "bin": {
          "acorn": "bin/acorn"
        },
-@@ -2022,6 +2066,7 @@
+@@ -2022,6 +2067,7 @@
        "version": "13.0.3",
        "resolved": "https://registry.npmjs.org/better-sqlite3/-/better-sqlite3-13.0.3.tgz",
        "integrity": "sha512-RbOBxmLBG8uvFUc15X9+9SFemKcQ0WBuISBVkpuiaUB2qblC8UWlHEjdWVoZ8AdhSwmoEgsiXKfopX0CQxaACQ==",
@@ -832,7 +756,7 @@ index c762a0d..398f8b0 100644
        "license": "MIT",
        "dependencies": {
          "node-addon-api": "^8.0.0"
-@@ -2087,7 +2132,6 @@
+@@ -2087,7 +2133,6 @@
          }
        ],
        "license": "MIT",
@@ -840,7 +764,7 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "baseline-browser-mapping": "^2.10.44",
          "caniuse-lite": "^1.0.30001806",
-@@ -2835,7 +2879,6 @@
+@@ -2835,7 +2880,6 @@
        "deprecated": "This version is no longer supported. Please see https://eslint.org/version-support for other options.",
        "dev": true,
        "license": "MIT",
@@ -848,7 +772,7 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "@eslint-community/eslint-utils": "^4.2.0",
          "@eslint-community/regexpp": "^4.6.1",
-@@ -3005,7 +3048,6 @@
+@@ -3005,7 +3049,6 @@
        "integrity": "sha512-whOE1HFo/qJDyX4SnXzP4N6zOWn79WhnCUY/iDR0mPfQZO8wcYE4JClzI2oZrhBnnMUCBCHZhO6VQyoBU95mZA==",
        "dev": true,
        "license": "MIT",
@@ -856,7 +780,66 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "@rtsao/scc": "^1.1.0",
          "array-includes": "^3.1.9",
-@@ -4469,7 +4511,6 @@
+@@ -3779,6 +3822,19 @@
+         "url": "https://opencollective.com/unified"
+       }
+     },
++    "node_modules/hast-util-is-element": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/hast-util-is-element/-/hast-util-is-element-3.0.0.tgz",
++      "integrity": "sha512-Val9mnv2IWpLbNPqc/pUem+a7Ipj2aHacCwgNfTiK0vJKl0LF+4Ba4+v1oPHFpf3bLYmreq0/l3Gud9S5OH42g==",
++      "license": "MIT",
++      "dependencies": {
++        "@types/hast": "^3.0.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/unified"
++      }
++    },
+     "node_modules/hast-util-sanitize": {
+       "version": "5.0.2",
+       "resolved": "https://registry.npmjs.org/hast-util-sanitize/-/hast-util-sanitize-5.0.2.tgz",
+@@ -3834,6 +3890,22 @@
+         "url": "https://opencollective.com/unified"
+       }
+     },
++    "node_modules/hast-util-to-text": {
++      "version": "4.0.2",
++      "resolved": "https://registry.npmjs.org/hast-util-to-text/-/hast-util-to-text-4.0.2.tgz",
++      "integrity": "sha512-KK6y/BN8lbaq654j7JgBydev7wuNMcID54lkRav1P0CaE1e47P72AWWPiGKXTJU271ooYzcvTAn/Zt0REnvc7A==",
++      "license": "MIT",
++      "dependencies": {
++        "@types/hast": "^3.0.0",
++        "@types/unist": "^3.0.0",
++        "hast-util-is-element": "^3.0.0",
++        "unist-util-find-after": "^5.0.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/unified"
++      }
++    },
+     "node_modules/hast-util-whitespace": {
+       "version": "3.0.0",
+       "resolved": "https://registry.npmjs.org/hast-util-whitespace/-/hast-util-whitespace-3.0.0.tgz",
+@@ -3847,6 +3919,15 @@
+         "url": "https://opencollective.com/unified"
+       }
+     },
++    "node_modules/highlight.js": {
++      "version": "11.11.2",
++      "resolved": "https://registry.npmjs.org/highlight.js/-/highlight.js-11.11.2.tgz",
++      "integrity": "sha512-oaXMACAU0kzOMXBjWpNcX+vlwSBCIAiZ9BHa7gA15NOTtT2L/l8OSZDuqS2XppOhZBPJ7hm4o8ep2kyuip2uEQ==",
++      "license": "BSD-3-Clause",
++      "engines": {
++        "node": ">=12.0.0"
++      }
++    },
+     "node_modules/html-url-attributes": {
+       "version": "3.0.1",
+       "resolved": "https://registry.npmjs.org/html-url-attributes/-/html-url-attributes-3.0.1.tgz",
+@@ -4469,7 +4550,6 @@
        "integrity": "sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==",
        "dev": true,
        "license": "MIT",
@@ -864,7 +847,29 @@ index c762a0d..398f8b0 100644
        "bin": {
          "jiti": "bin/jiti.js"
        }
-@@ -6127,7 +6168,6 @@
+@@ -4662,6 +4742,21 @@
+         "loose-envify": "cli.js"
+       }
+     },
++    "node_modules/lowlight": {
++      "version": "3.3.0",
++      "resolved": "https://registry.npmjs.org/lowlight/-/lowlight-3.3.0.tgz",
++      "integrity": "sha512-0JNhgFoPvP6U6lE/UdVsSq99tn6DhjjpAj5MxG49ewd2mOBVtwWYIT8ClyABhq198aXXODMU6Ox8DrGy/CpTZQ==",
++      "license": "MIT",
++      "dependencies": {
++        "@types/hast": "^3.0.0",
++        "devlop": "^1.0.0",
++        "highlight.js": "~11.11.0"
++      },
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/wooorm"
++      }
++    },
+     "node_modules/markdown-table": {
+       "version": "3.0.4",
+       "resolved": "https://registry.npmjs.org/markdown-table/-/markdown-table-3.0.4.tgz",
+@@ -6127,7 +6222,6 @@
          }
        ],
        "license": "MIT",
@@ -872,7 +877,7 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "nanoid": "^3.3.16",
          "picocolors": "^1.1.1",
-@@ -6361,7 +6401,6 @@
+@@ -6361,7 +6455,6 @@
        "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
        "integrity": "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==",
        "license": "MIT",
@@ -880,7 +885,7 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "loose-envify": "^1.1.0"
        },
-@@ -6374,7 +6413,6 @@
+@@ -6374,7 +6467,6 @@
        "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
        "integrity": "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==",
        "license": "MIT",
@@ -888,7 +893,31 @@ index c762a0d..398f8b0 100644
        "dependencies": {
          "loose-envify": "^1.1.0",
          "scheduler": "^0.23.2"
-@@ -7402,7 +7440,6 @@
+@@ -6484,6 +6576,23 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/rehype-highlight": {
++      "version": "7.0.2",
++      "resolved": "https://registry.npmjs.org/rehype-highlight/-/rehype-highlight-7.0.2.tgz",
++      "integrity": "sha512-k158pK7wdC2qL3M5NcZROZ2tR/l7zOzjxXd5VGdcfIyoijjQqpHd3JKtYSBDpDZ38UI2WJWuFAtkMDxmx5kstA==",
++      "license": "MIT",
++      "dependencies": {
++        "@types/hast": "^3.0.0",
++        "hast-util-to-text": "^4.0.0",
++        "lowlight": "^3.0.0",
++        "unist-util-visit": "^5.0.0",
++        "vfile": "^6.0.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/unified"
++      }
++    },
+     "node_modules/rehype-sanitize": {
+       "version": "6.0.0",
+       "resolved": "https://registry.npmjs.org/rehype-sanitize/-/rehype-sanitize-6.0.0.tgz",
+@@ -7402,7 +7511,6 @@
        "integrity": "sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==",
        "dev": true,
        "license": "MIT",
@@ -896,7 +925,7 @@ index c762a0d..398f8b0 100644
        "engines": {
          "node": ">=12"
        },
-@@ -7592,7 +7629,6 @@
+@@ -7592,7 +7700,6 @@
        "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
        "dev": true,
        "license": "Apache-2.0",
@@ -904,3 +933,67 @@ index c762a0d..398f8b0 100644
        "bin": {
          "tsc": "bin/tsc",
          "tsserver": "bin/tsserver"
+@@ -7646,6 +7753,20 @@
+         "url": "https://opencollective.com/unified"
+       }
+     },
++    "node_modules/unist-util-find-after": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/unist-util-find-after/-/unist-util-find-after-5.0.0.tgz",
++      "integrity": "sha512-amQa0Ep2m6hE2g72AugUItjbuM8X8cGQnFoHk0pGfrFeT9GZhzN5SW8nRsiGKK7Aif4CrACPENkA6P/Lw6fHGQ==",
++      "license": "MIT",
++      "dependencies": {
++        "@types/unist": "^3.0.0",
++        "unist-util-is": "^6.0.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/unified"
++      }
++    },
+     "node_modules/unist-util-is": {
+       "version": "6.0.1",
+       "resolved": "https://registry.npmjs.org/unist-util-is/-/unist-util-is-6.0.1.tgz",
+diff --git a/package.json b/package.json
+index dcd8287..4a48811 100644
+--- a/package.json
++++ b/package.json
+@@ -14,6 +14,7 @@
+     "react": "^18.3.0",
+     "react-dom": "^18.3.0",
+     "react-markdown": "^10.1.0",
++    "rehype-highlight": "^7.0.2",
+     "rehype-sanitize": "^6.0.0",
+     "rehype-slug": "^6.0.0",
+     "remark-gfm": "^4.0.1"
+diff --git a/tailwind.config.ts b/tailwind.config.ts
+index b0b5f23..ff2f2ba 100644
+--- a/tailwind.config.ts
++++ b/tailwind.config.ts
+@@ -29,6 +29,7 @@ const config: Config = {
+             orange: '#e69875',    // Everforest orange
+             purple: '#d699b6',    // Same as magenta for purple
+             pink: '#d699b6',      // Same as magenta
++            amber: '#e6b450',     // Warm gold - hover highlights, "owner" badges
+           }
+         }
+       },
+@@ -38,6 +39,7 @@ const config: Config = {
+       animation: {
+         'typing': 'typing 2s steps(40, end)',
+         'blink': 'blink 1s step-end infinite',
++        'pulse-slow': 'pulse-slow 6s ease-in-out infinite',
+       },
+       keyframes: {
+         typing: {
+@@ -47,6 +49,10 @@ const config: Config = {
+         blink: {
+           '0%, 50%': { opacity: '1' },
+           '51%, 100%': { opacity: '0' }
++        },
++        'pulse-slow': {
++          '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
++          '50%': { opacity: '1', transform: 'scale(1.08)' },
+         }
+       }
+     },
