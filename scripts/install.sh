@@ -278,12 +278,12 @@ $COMPOSE up -d --build
 ok "Container started."
 
 # ── 9. wait for app to be ready ───────────────────────────────────────────────
-log "Waiting for app to be ready on :3000…"
+log "Waiting for app to be ready on :${APP_PORT}…"
 for i in $(seq 1 30); do
-  curl -sf http://127.0.0.1:3000 -o /dev/null && break
+  curl -sf "http://127.0.0.1:${APP_PORT}" -o /dev/null && break
   sleep 2
 done
-curl -sf http://127.0.0.1:3000 -o /dev/null || warn "App may not be ready yet — check 'docker compose logs'."
+curl -sf "http://127.0.0.1:${APP_PORT}" -o /dev/null || warn "App may not be ready yet — check 'docker compose logs'."
 
 # ── 10. nginx config ──────────────────────────────────────────────────────────
 log "Writing nginx configuration…"
@@ -294,7 +294,7 @@ cat > "$NGINX_CONF" <<NGINX
 # Both subdomains proxy to the same Next.js app; it routes on the Host header.
 
 upstream portfolio_app {
-    server 127.0.0.1:3000;
+    server 127.0.0.1:${APP_PORT};
     keepalive 8;
 }
 

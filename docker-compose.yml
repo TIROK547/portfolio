@@ -6,7 +6,7 @@ services:
     environment:
       DATA_DIR: /data
     ports:
-      - "127.0.0.1:3000:3000"   # nginx / cloudflared talks to this
+      - "127.0.0.1:${PORT:-3000}:${PORT:-3000}"   # nginx / cloudflared talks to this
     volumes:
       - portfolio-data:/data     # site.db + uploads/
 
