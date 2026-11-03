@@ -4,7 +4,7 @@ import { createReadStream, statSync, readdirSync } from "fs";
 import { join } from "path";
 import { createGzip } from "zlib";
 import { PassThrough } from "stream";
-import * as archiver from "archiver";
+import { archiverLib } from "archiver";
 
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
   // Build the zip via a PassThrough stream so we can hand it to NextResponse
   const pass = new PassThrough();
-  const archive = archiver("zip", { zlib: { level: 6 } });
+  const archive = archiverLib("zip", { zlib: { level: 6 } });
 
   archive.on("error", (err) => {
     console.error("[backup] archiver error:", err);
