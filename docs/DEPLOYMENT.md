@@ -2,46 +2,48 @@
 
 This app requires a host with a **persistent disk** — the SQLite database and uploaded images are written to `DATA_DIR` at runtime. Serverless platforms (Vercel, Netlify, Railway ephemeral) won't work.
 
-## Prerequisites
+## New Ubuntu VPS
 
-On the VPS before running anything:
-
-- Git
-- Docker with Compose plugin (`docker compose`)
-- Nginx
-- Certbot (`python3-certbot-nginx`)
-- Node.js 18+
-- `curl`, `unzip`
-
-For Debian/Ubuntu package commands, see [`INSTALL_DEPS.md`](INSTALL_DEPS.md).
-
----
-
-## Automated VPS install
-
-`scripts/install.sh` covers a full production install from scratch.  
-Point both DNS records (`portfolio.<domain>` and `admin.<domain>`) at the VPS **before** running it.
+Point both DNS records (`portfolio.<domain>` and `admin.<domain>`) at the VPS, then run:
 
 ```bash
+sudo apt update && sudo apt upgrade -y
 bash <(curl -fsSL https://raw.githubusercontent.com/TIROK547/portfolio/main/scripts/install.sh)
 ```
 
-The script will interactively ask for:
+The first command upgrades the base system. The script does the rest. It installs, on Ubuntu:
+
+- Git
+- Docker Engine and the Compose plugin (`docker compose`)
+- Nginx
+- Certbot (`python3-certbot-nginx`)
+- Node.js 22 (used to hash the admin password; the app itself runs in Docker)
+- `curl` and `unzip`
+
+Ubuntu cloud images already include `curl`, which the second command uses to download the script. It asks for sudo if you are not root.
+
+The script then asks for:
 
 - Base domain (it configures `portfolio.<domain>` and `admin.<domain>`)
 - Install directory (default: `/opt/portfolio`)
-- Admin username and password
+- Admin username and password (at least 12 characters)
 - Optional backup ZIP to restore from
 - Email address for Let's Encrypt
 
-It then:
+After that it:
 
 1. Generates `SESSION_SECRET` and `ADMIN_PASSWORD_HASH`, writes `.env`
 2. Builds and starts the Docker Compose service
 3. Configures Nginx to proxy both hostnames to `127.0.0.1:3000`
 4. Obtains TLS certificates with Certbot
 
-Re-running the script on an existing checkout pulls the latest version before rebuilding.
+Re-running the script on an existing checkout pulls the latest version before rebuilding. Packages that are already present are left in place.
+
+---
+
+## Manual Docker deploy
+
+The steps below assume Docker with Compose, Node.js 18+, and a reverse proxy are already installed.
 
 ---
 

@@ -87,7 +87,6 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full VPS, Docker, and reverse
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | VPS install script, Docker Compose, Nginx config |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Host routing, blog/editor design, auth, comments, data model |
 | [`docs/CUSTOMIZATION.md`](docs/CUSTOMIZATION.md) | Color scheme, fonts, visitor counter, adding static content |
-| [`docs/INSTALL_DEPS.md`](docs/INSTALL_DEPS.md) | Extra npm packages required (`archiver`, `adm-zip`) |
 
 ## License
 
