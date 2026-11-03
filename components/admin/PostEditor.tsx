@@ -37,6 +37,10 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
 
+  const [jsonOpen, setJsonOpen] = useState(false)
+  const [jsonText, setJsonText] = useState('')
+  const [jsonError, setJsonError] = useState<string | null>(null)
+
   const ta = useRef<HTMLTextAreaElement>(null)
   const imageInput = useRef<HTMLInputElement>(null)
   const coverInput = useRef<HTMLInputElement>(null)
@@ -207,6 +211,60 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
     }
   }
 
+  /* --------------------------------------------------------- JSON import */
+
+  function importFromJson() {
+    setJsonError(null)
+    let parsed: Record<string, unknown>
+    try {
+      parsed = JSON.parse(jsonText)
+    } catch {
+      setJsonError('Invalid JSON — could not parse.')
+      return
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      setJsonError('Expected a JSON object at the top level.')
+      return
+    }
+
+    const getString = (key: string) => (typeof parsed[key] === 'string' ? (parsed[key] as string).trim() : '')
+
+    const nextTitle = getString('title')
+    const nextCategory = getString('category')
+    const nextCoverImage = getString('image')
+    const nextContent = getString('body')
+
+    // tags: array of strings or a space/comma-separated string
+    let nextTagsText = tagsText
+    if (Array.isArray(parsed['tags'])) {
+      nextTagsText = (parsed['tags'] as unknown[])
+        .filter((t) => typeof t === 'string')
+        .map((t) => `#${(t as string).replace(/^#/, '')}`)
+        .join(' ')
+    } else if (typeof parsed['tags'] === 'string') {
+      nextTagsText = (parsed['tags'] as string)
+        .split(/[,\s]+/)
+        .filter(Boolean)
+        .map((t) => `#${t.replace(/^#/, '')}`)
+        .join(' ')
+    }
+
+    if (!nextTitle && !nextContent) {
+      setJsonError('JSON must include at least "title" or "body".')
+      return
+    }
+
+    if (nextTitle) setTitle(nextTitle)
+    if (nextCategory) setCategory(nextCategory)
+    if (nextCoverImage) setCoverImage(nextCoverImage)
+    if (nextContent) setContent(nextContent)
+    if (nextTagsText) setTagsText(nextTagsText)
+
+    setJsonText('')
+    setJsonOpen(false)
+    setJsonError(null)
+  }
+
   /* ------------------------------------------------------------------ view */
 
   const writeHidden = view === 'preview'
@@ -236,6 +294,61 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
             {busy ? 'saving…' : 'save'}
           </button>
         </div>
+      </div>
+
+      {/* JSON import panel */}
+      <div className="mb-6 border border-terminal-text-dark/20">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between px-4 py-2 text-xs text-terminal-text-dark/60 hover:text-terminal-accent-cyan transition-colors"
+          onClick={() => { setJsonOpen((o) => !o); setJsonError(null) }}
+        >
+          <span>
+            <span className="text-terminal-accent-cyan me-2">{'>'}</span>
+            import from json
+          </span>
+          <span className="font-mono">{jsonOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {jsonOpen && (
+          <div className="border-t border-terminal-text-dark/20 p-4 space-y-3">
+            <p className="text-xs text-terminal-text-dark/50">
+              Paste a post JSON — <code className="text-terminal-accent-cyan">title</code>,{' '}
+              <code className="text-terminal-accent-cyan">body</code>,{' '}
+              <code className="text-terminal-accent-cyan">category</code>,{' '}
+              <code className="text-terminal-accent-cyan">tags</code>,{' '}
+              <code className="text-terminal-accent-cyan">image</code> are recognised.
+              Existing fields will be overwritten.
+            </p>
+            <textarea
+              className="adm-input font-mono text-xs min-h-[10rem] resize-y"
+              placeholder={'{\n  "title": "My Post",\n  "category": "Backend",\n  "tags": ["go", "api"],\n  "image": "https://…",\n  "body": "# My Post\\n\\nContent here…"\n}'}
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+              spellCheck={false}
+            />
+            {jsonError && (
+              <p className="text-xs text-terminal-accent-red">{jsonError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="adm-btn adm-btn-primary"
+                onClick={importFromJson}
+                disabled={!jsonText.trim()}
+              >
+                import
+              </button>
+              <button
+                type="button"
+                className="adm-btn"
+                onClick={() => { setJsonOpen(false); setJsonText(''); setJsonError(null) }}
+              >
+                cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-6">
