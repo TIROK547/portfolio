@@ -197,7 +197,7 @@ if [[ -d "$INSTALL_DIR/.git" ]]; then
   git -C "$INSTALL_DIR" pull
 else
   log "Cloning repository into ${INSTALL_DIR}…"
-  git clone https://github.com/TIROK547/portfolio.git "$INSTALL_DIR"
+  git clone --branch dev https://github.com/TIROK547/portfolio.git "$INSTALL_DIR"
 fi
 cd "$INSTALL_DIR"
 
