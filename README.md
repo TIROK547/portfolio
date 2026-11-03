@@ -59,32 +59,26 @@ The site will be available at `http://localhost:3000` (or next available port).
 ```
 portfolio/
 ├── app/
-│   ├── [lang]/              # Route structure (currently English only)
-│   │   ├── about/           # About page with bio, skills, resume
-│   │   ├── projects/        # Projects showcase
-│   │   ├── contact/         # Contact information
-│   │   ├── layout.tsx       # Page layout wrapper
-│   │   └── page.tsx         # Home page
-│   ├── globals.css          # Global styles
-│   ├── layout.tsx           # Root layout
-│   └── not-found.tsx        # 404 page
+│   ├── [lang]/                    # Public pages: home, about, blog, projects, contact
+│   ├── admin/                     # Admin dashboard and editor pages
+│   ├── api/                       # Blog, comments, admin and upload endpoints
+│   ├── uploads/                   # Serves uploaded images
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── not-found.tsx
 ├── components/
-│   ├── AsciiArt.tsx         # Terminal ASCII art
-│   ├── BackLink.tsx         # "cd .." back link
-│   ├── Footer.tsx           # Footer with visitor counter
-│   ├── Header.tsx           # Header with navigation & info card
-│   ├── Hero.tsx             # Neofetch-style hero section
-│   ├── ProjectCard.tsx      # Project display component
-│   ├── StackDisplay.tsx     # Tech stack overview
-│   └── TechIcon.tsx         # Technology icons
-├── lib/
-│   └── i18n.ts              # i18n configuration (legacy)
-├── public/
-│   ├── images/
-│   │   └── profile.jpg      # Profile picture
-│   └── resume.pdf           # Downloadable resume
-└── tailwind.config.ts       # Tailwind configuration
+│   ├── admin/                     # Admin forms, lists, backup/restore
+│   └── ...                        # Shared public-site and blog components
+├── lib/                           # Database, auth, validation and settings
+├── scripts/                       # Password utility and VPS installer
+├── docs/                          # Deployment and dependency guidance
+├── public/                        # Static assets and downloadable resume
+├── Dockerfile
+├── docker-compose.yml
+└── middleware.ts                  # Host routing and admin access control
 ```
+
+The database and uploaded images are runtime data stored under `DATA_DIR`; they are not kept in the source tree.
 
 ## Customization
 
@@ -364,10 +358,10 @@ npm run dev                         # http://localhost:3000 and http://admin.loc
 
 #### VPS installation
 
-`install.sh` automates a production install on a Linux VPS. It expects Git, Docker with Compose, Nginx, Certbot, Node.js 18+, `curl`, and `unzip` to be installed already. Run it as a user with permission to write under `/opt` (or the chosen install directory), manage Nginx and reload system services, and access Docker volumes:
+`scripts/install.sh` automates a production install on a Linux VPS. It expects Git, Docker with Compose, Nginx, Certbot, Node.js 18+, `curl`, and `unzip` to be installed already. Run it as a user with permission to write under `/opt` (or the chosen install directory), manage Nginx and reload system services, and access Docker volumes:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/TIROK547/portfolio/main/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/TIROK547/portfolio/main/scripts/install.sh)
 ```
 
 The installer asks for your base domain (it configures `portfolio.<domain>` and `admin.<domain>`), install directory (defaults to `/opt/portfolio`), admin username and password, an optional backup ZIP to restore, and an email for Let's Encrypt. It generates the session secret and password hash, writes `.env`, builds and starts the Docker Compose service, configures Nginx to send both hostnames to the app, and obtains TLS certificates with Certbot. Point both DNS records at the VPS first. Re-running in an existing Git checkout pulls the latest version before rebuilding.
@@ -376,7 +370,7 @@ The optional restore expects a backup ZIP containing `site.db` and, if present, 
 
 For manual production deployment, configure `.env` as above and run `docker compose up -d --build`. The app listens on `127.0.0.1:3000`; proxy both hostnames to it and preserve the `Host` header. The Docker named volume keeps the database and uploaded images across container rebuilds.
 
-For Debian/Ubuntu dependency guidance, see [`INSTALL_DEPS.md`](INSTALL_DEPS.md).
+For Debian/Ubuntu dependency guidance, see [`docs/INSTALL_DEPS.md`](docs/INSTALL_DEPS.md).
 
 ### Reverse proxy
 

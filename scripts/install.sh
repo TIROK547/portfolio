@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# portfolio install.sh
-# One-liner: bash <(curl -fsSL https://raw.githubusercontent.com/TIROK547/portfolio/main/install.sh)
+# Portfolio VPS installer
+# One-liner: bash <(curl -fsSL https://raw.githubusercontent.com/TIROK547/portfolio/main/scripts/install.sh)
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
