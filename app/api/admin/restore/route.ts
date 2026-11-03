@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifySession } from "@/lib/auth";
+import { guardApi } from "@/lib/auth";
 import { writeFileSync, mkdirSync, existsSync, renameSync } from "fs";
 import { join } from "path";
 import AdmZip from "adm-zip";
@@ -9,11 +8,8 @@ const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
 export async function POST(req: NextRequest) {
   // Auth check
-  const cookieStore = await cookies();
-  const session = cookieStore.get("session")?.value;
-  if (!(await verifySession(session))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = await guardApi(req);
+  if (authError) return authError;
 
   const contentType = req.headers.get("content-type") ?? "";
   if (!contentType.includes("multipart/form-data")) {
