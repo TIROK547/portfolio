@@ -4,7 +4,7 @@ import { createReadStream, statSync, readdirSync } from "fs";
 import { join } from "path";
 import { createGzip } from "zlib";
 import { PassThrough } from "stream";
-import { archiverLib } from "archiver";
+import archiverLib from "archiver";
 
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
