@@ -1,4 +1,5 @@
 import SettingsForm from '@/components/admin/SettingsForm'
+import BackupRestore from '@/components/admin/BackupRestore'
 import { getSettings } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -13,6 +14,9 @@ export default function SettingsPage() {
         Everything here shows up on the public portfolio (home, about, contact and the info card). Changes are live right after saving.
       </p>
       <SettingsForm initial={getSettings()} />
+      <div className="mt-8">
+        <BackupRestore />
+      </div>
     </>
   )
 }
