@@ -173,28 +173,8 @@ cat <<'EOF'
 EOF
 echo -e "${RESET}"
 
-# ── 1. dependency checks ──────────────────────────────────────────────────────
-log "Checking dependencies…"
-
-need() {
-  command -v "$1" &>/dev/null || die "$1 is required but not installed. Install it and re-run."
-}
-
-need git
-need docker
-need nginx
-need certbot
-need node
-
-# docker compose (v2 plugin or standalone v1)
-if docker compose version &>/dev/null 2>&1; then
-  COMPOSE="docker compose"
-elif command -v docker-compose &>/dev/null; then
-  COMPOSE="docker-compose"
-else
-  die "docker compose not found. Install Docker Compose v2 and re-run."
-fi
-ok "All dependencies found."
+# ── 1. install dependencies ──────────────────────────────────────────────────
+install_prereqs
 
 # ── 2. domain ─────────────────────────────────────────────────────────────────
 echo
