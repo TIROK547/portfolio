@@ -340,6 +340,8 @@ One Next.js app serves two hostnames and stores everything in a single SQLite fi
 | `portfolio.tirok.ir` | public site: `/en/blog`, `/en/blog/<slug>` (with comments), latest posts on the home page, projects and site info from the DB |
 | `admin.tirok.ir` | private editor (login required): posts, drafts, categories, `#tags`, image upload, projects, comments, site settings |
 
+- The public blog supports filtering posts by category and tag. Published posts show comments, and the home page displays recent posts.
+- Projects can be reordered in the editor; project content and ordering are stored in SQLite.
 - Data: `DATA_DIR/site.db` (posts, categories, tags, projects, comments, settings) and `DATA_DIR/uploads/` (images). Back up both.
 - Posts are Markdown (headers, lists, code, tables, images). Raw HTML is sanitized.
 - Projects are seeded once from `lib/seed-projects.ts`; after that they're edited from the editor.
@@ -350,15 +352,31 @@ One Next.js app serves two hostnames and stores everything in a single SQLite fi
 
 ### Setup
 
+#### Local development
+
 ```bash
 npm install
-node scripts/hash-password.mjs      # prints SESSION_SECRET + ADMIN_PASSWORD_HASH
+node scripts/hash-password.mjs      # prints SESSION_SECRET + ADMIN_PASSWORD_HASH (or pass a password as an argument)
 cp .env.example .env                # paste them in, set ADMIN_USER
 # dev over http: add INSECURE_COOKIES=1 to .env
 npm run dev                         # http://localhost:3000 and http://admin.localhost:3000
 ```
 
-Production with Docker: `docker compose up -d --build`. The app listens on `127.0.0.1:3000`.
+#### VPS installation
+
+`install.sh` automates a production install on a Linux VPS. It expects Git, Docker with Compose, Nginx, Certbot, Node.js 18+, `curl`, and `unzip` to be installed already. Run it as a user with permission to write under `/opt` (or the chosen install directory), manage Nginx and reload system services, and access Docker volumes:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/TIROK547/portfolio/main/install.sh)
+```
+
+The installer asks for your base domain (it configures `portfolio.<domain>` and `admin.<domain>`), install directory (defaults to `/opt/portfolio`), admin username and password, an optional backup ZIP to restore, and an email for Let's Encrypt. It generates the session secret and password hash, writes `.env`, builds and starts the Docker Compose service, configures Nginx to send both hostnames to the app, and obtains TLS certificates with Certbot. Point both DNS records at the VPS first. Re-running in an existing Git checkout pulls the latest version before rebuilding.
+
+The optional restore expects a backup ZIP containing `site.db` and, if present, an `uploads/` directory. Backups can also be downloaded and restored later from the admin panel's backup/restore controls. Keep a copy of backup ZIPs somewhere outside the server.
+
+For manual production deployment, configure `.env` as above and run `docker compose up -d --build`. The app listens on `127.0.0.1:3000`; proxy both hostnames to it and preserve the `Host` header. The Docker named volume keeps the database and uploaded images across container rebuilds.
+
+For Debian/Ubuntu dependency guidance, see [`INSTALL_DEPS.md`](INSTALL_DEPS.md).
 
 ### Reverse proxy
 
