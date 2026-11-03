@@ -201,6 +201,10 @@ else
 fi
 cd "$INSTALL_DIR"
 
+# The compose file publishes the app on PORT, defaulting to 3000. Keep the
+# readiness check and nginx upstream on the same port as the container.
+APP_PORT="${PORT:-3000}"
+
 # ── 4. admin credentials ───────────────────────────────────────────────────────
 echo
 echo -e "${BOLD}Admin credentials${RESET}"
