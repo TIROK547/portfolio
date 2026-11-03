@@ -4,11 +4,8 @@ const editorHost = [{ type: 'host', value: 'admin\\..*' }];
 const nextConfig = {
   output: 'standalone',
   serverExternalPackages: ['better-sqlite3'],
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // admin.tirok.ir serves the editor from /admin/* without showing the prefix.
-  // Access control for both hosts lives in middleware.ts.
+  // Access control for both hosts lives in proxy.ts.
   async rewrites() {
     return {
       beforeFiles: [

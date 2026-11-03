@@ -186,12 +186,12 @@ export default function Header({ locale, translations, info }: HeaderProps) {
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
                   <span className="text-terminal-text-dark">name</span> ={' '}
-                  <span className="text-terminal-accent-red">"{info.name} ({info.alias})"</span>;
+                  <span className="text-terminal-accent-red">&quot;{info.name} ({info.alias})&quot;</span>;
                 </div>
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
                   <span className="text-terminal-text-dark">role</span> ={' '}
-                  <span className="text-terminal-accent-red">"{info.role}"</span>;
+                  <span className="text-terminal-accent-red">&quot;{info.role}&quot;</span>;
                 </div>
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
@@ -201,7 +201,7 @@ export default function Header({ locale, translations, info }: HeaderProps) {
                 <div>
                   <span className="text-terminal-accent-blue">const</span>{' '}
                   <span className="text-terminal-text-dark">location</span> ={' '}
-                  <span className="text-terminal-accent-red">"{info.location}"</span>;
+                  <span className="text-terminal-accent-red">&quot;{info.location}&quot;</span>;
                 </div>
                 <div className="pt-2 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
                   <p className="text-terminal-text-light dark:text-terminal-text-dark/80 leading-relaxed">

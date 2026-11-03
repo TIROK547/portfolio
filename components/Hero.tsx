@@ -26,13 +26,14 @@ export default function Hero({ info, stack, locale = "en" }: HeroProps) {
   const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setIsVisible(true);
+    const frame = requestAnimationFrame(() => setIsVisible(true));
 
     const timer = setTimeout(() => {
       setTypingComplete(true);
     }, 3000);
 
     return () => {
+      cancelAnimationFrame(frame);
       clearTimeout(timer);
     };
   }, []);

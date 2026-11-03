@@ -10,16 +10,16 @@ A retro terminal-inspired portfolio website with modern GUI structure, built wit
 - 🎨 **Neofetch-Style Hero**: Custom ASCII art with system info display
 - 👥 **Visitor Counter**: Track total visitors (starts at 547)
 - 📄 **Resume Download**: One-click resume download in PDF format
-- 🚀 **Modern Stack**: Next.js 15, TypeScript, Tailwind CSS
+- 🚀 **Modern Stack**: Next.js 16, TypeScript, Tailwind CSS
 - ⚡ **Fast Performance**: Static generation, optimized assets
 
 ## Tech Stack
 
 ### Frontend
-- Next.js 15 (App Router)
+- Next.js 16 (App Router)
 - TypeScript
 - Tailwind CSS
-- React 18
+- React 19
 
 ### Styling
 - Custom Everforest-inspired terminal color scheme
@@ -29,7 +29,7 @@ A retro terminal-inspired portfolio website with modern GUI structure, built wit
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ or higher
+- Node.js 20.9+ (Node.js 22 recommended)
 - npm, yarn, or pnpm
 
 ### Installation
@@ -75,7 +75,7 @@ portfolio/
 ├── public/                        # Static assets and downloadable resume
 ├── Dockerfile
 ├── docker-compose.yml
-└── middleware.ts                  # Host routing and admin access control
+└── proxy.ts                       # Host routing and admin access control
 ```
 
 The database and uploaded images are runtime data stored under `DATA_DIR`; they are not kept in the source tree.
@@ -262,7 +262,7 @@ npm run build
 ### Docker
 
 ```dockerfile
-FROM node:18-alpine
+FROM node:22-bookworm-slim
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -323,7 +323,7 @@ Feel free to use this as inspiration for your own portfolio, but please don't di
 
 Built with ❤️ and ⌨️ by tirok
 
-**Tech Stack**: Next.js 15 • TypeScript • Tailwind CSS • React 18
+**Tech Stack**: Next.js 16 • TypeScript • Tailwind CSS • React 19
 
 ## Blog, editor and backend
 
@@ -358,7 +358,7 @@ npm run dev                         # http://localhost:3000 and http://admin.loc
 
 #### VPS installation
 
-`scripts/install.sh` automates a production install on a Linux VPS. It expects Git, Docker with Compose, Nginx, Certbot, Node.js 18+, `curl`, and `unzip` to be installed already. Run it as a user with permission to write under `/opt` (or the chosen install directory), manage Nginx and reload system services, and access Docker volumes:
+`scripts/install.sh` automates a production install on a Linux VPS. It expects Git, Docker with Compose, Nginx, Certbot, Node.js 18+ (for generating the admin password hash), `curl`, and `unzip` to be installed already. Run it as a user with permission to write under `/opt` (or the chosen install directory), manage Nginx and reload system services, and access Docker volumes:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/TIROK547/portfolio/main/scripts/install.sh)

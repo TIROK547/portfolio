@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifySession } from "@/lib/auth";
-import { createReadStream, statSync, readdirSync } from "fs";
+import { guardApi } from "@/lib/auth";
+import { statSync, readdirSync } from "fs";
 import { join } from "path";
-import { createGzip } from "zlib";
 import { PassThrough } from "stream";
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
 export async function GET(req: NextRequest) {
-  // Auth check — same pattern as every other admin route
-  const cookieStore = await cookies();
-  const session = cookieStore.get("session")?.value;
-  if (!(await verifySession(session))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await guardApi(req);
+  if (denied) return denied;
 
   const dbPath = join(DATA_DIR, "site.db");
   const uploadsPath = join(DATA_DIR, "uploads");
@@ -32,7 +26,7 @@ export async function GET(req: NextRequest) {
 
   // Build the zip via a PassThrough stream so we can hand it to NextResponse
   const pass = new PassThrough();
-  const archive = archiver("zip", { zlib: { level: 6 } });
+  const archive = new ZipArchive({ zlib: { level: 6 } });
 
   archive.on("error", (err) => {
     console.error("[backup] archiver error:", err);

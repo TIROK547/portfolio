@@ -105,7 +105,7 @@ export default function SettingsForm({ initial }: { initial: SiteSettings }) {
             <input id="s-gh" className="adm-input" value={contact.github} onChange={setC('github')} placeholder="tirok547" maxLength={60} />
           </div>
           <div>
-            <label className="adm-label" htmlFor="s-li">linkedin (full https URL, empty = "coming soon")</label>
+            <label className="adm-label" htmlFor="s-li">linkedin (full https URL, empty = &quot;coming soon&quot;)</label>
             <input id="s-li" className="adm-input" value={contact.linkedin} onChange={setC('linkedin')} placeholder="https://linkedin.com/in/…" maxLength={200} />
           </div>
           <div>
