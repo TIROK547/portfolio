@@ -1,392 +1,101 @@
-# Portfolio Website - Alireza Ghotbi (tirok)
+# portfolio.tirok.ir
 
-A retro terminal-inspired portfolio website with modern GUI structure, built with Next.js, TypeScript, and Tailwind CSS.
+Personal portfolio site for Alireza Ghotbi (tirok) — retro terminal aesthetic, built with Next.js 15, TypeScript, and Tailwind CSS. Includes a private Markdown blog editor and dynamic site settings, all backed by SQLite.
+
+Live at [portfolio.tirok.ir](https://portfolio.tirok.ir) · Editor at [admin.tirok.ir](https://admin.tirok.ir)
 
 ## Features
 
-- ✍️ **Blog & private editor**: Markdown posts, tags, categories, images and comments, managed from admin.tirok.ir
-- 🛠️ **Editable site info**: contact details, bio, stack and skills are stored in SQLite and edited from the admin panel
-- 📱 **Fully Responsive**: Mobile-optimized design with touch detection
-- 🎨 **Neofetch-Style Hero**: Custom ASCII art with system info display
-- 👥 **Visitor Counter**: Track total visitors (starts at 547)
-- 📄 **Resume Download**: One-click resume download in PDF format
-- 🚀 **Modern Stack**: Next.js 15, TypeScript, Tailwind CSS
-- ⚡ **Fast Performance**: Static generation, optimized assets
+- **Blog** — Markdown posts with categories, tags, images, and comments; managed from the private editor at `admin.tirok.ir`
+- **Dynamic site info** — bio, contact details, tech stack, skills, and availability are stored in SQLite and edited from the admin panel (no hardcoded content)
+- **Projects** — managed from the editor, with ordering support; seeded once from `lib/seed-projects.ts`
+- **Neofetch-style hero** — ASCII art with live system info pulled from site settings
+- **Visitor counter** — session-based, starts at 547, stored in localStorage
+- **Resume download** — one-click PDF download from the About page
+- **i18n-ready routing** — pages live under `/[lang]/` (currently `en`)
 
 ## Tech Stack
 
-### Frontend
-- Next.js 15 (App Router)
-- TypeScript
-- Tailwind CSS
-- React 18
-
-### Styling
-- Custom Everforest-inspired terminal color scheme
-- JetBrains Mono font
-- Responsive design with Tailwind breakpoints
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+ or higher
-- npm, yarn, or pnpm
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/tirok547/portfolio.git
-cd portfolio
-
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-```
-
-The site will be available at `http://localhost:3000` (or next available port).
+| Layer    | Tech                                         |
+|----------|----------------------------------------------|
+| Frontend | Next.js 15 (App Router), React 18, TypeScript |
+| Styling  | Tailwind CSS, Everforest color scheme, JetBrains Mono |
+| Backend  | Next.js API routes, SQLite (`better-sqlite3`) |
+| Auth     | scrypt password hash, signed httpOnly cookie  |
+| Infra    | Docker, Nginx reverse proxy, VPS             |
 
 ## Project Structure
 
 ```
 portfolio/
 ├── app/
-│   ├── [lang]/                    # Public pages: home, about, blog, projects, contact
-│   ├── admin/                     # Admin dashboard and editor pages
-│   ├── api/                       # Blog, comments, admin and upload endpoints
-│   ├── uploads/                   # Serves uploaded images
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── not-found.tsx
+│   ├── [lang]/         # Public pages: home, about, blog, projects, contact
+│   ├── admin/          # Admin dashboard, editor, settings
+│   ├── api/            # Blog, comments, admin and upload endpoints
+│   └── uploads/        # Serves uploaded images
 ├── components/
-│   ├── admin/                     # Admin forms, lists, backup/restore
-│   └── ...                        # Shared public-site and blog components
-├── lib/                           # Database, auth, validation and settings
-├── scripts/                       # Password utility and VPS installer
-├── docs/                          # Deployment and dependency guidance
-├── public/                        # Static assets and downloadable resume
+│   ├── admin/          # Admin forms, lists, backup/restore UI
+│   └── ...             # Shared public-site and blog components
+├── lib/                # Database, auth, validation, settings defaults
+├── scripts/            # Password utility, VPS installer
+├── docs/               # Extended documentation (see below)
+├── public/             # Static assets and downloadable resume
 ├── Dockerfile
 ├── docker-compose.yml
-└── middleware.ts                  # Host routing and admin access control
+└── middleware.ts       # Host routing and admin access control
 ```
 
-The database and uploaded images are runtime data stored under `DATA_DIR`; they are not kept in the source tree.
+Runtime data (`site.db` and `uploads/`) lives under `DATA_DIR` and is not tracked in git.
 
-## Customization
+## Getting Started
 
-### Adding Projects
+### Local development
 
-Edit `app/[lang]/projects/page.tsx` and add new entries to the `projects` array:
-
-```typescript
-{
-  name: 'Project Name',
-  description: 'Detailed project description with technologies used',
-  stack: ['Next.js', 'Django', 'PostgreSQL', 'Docker'],
-  github: 'https://github.com/username/repo',
-  status: 'active' // Options: 'active', 'wip', 'archived'
-}
+```bash
+npm install
+node scripts/hash-password.mjs   # prints SESSION_SECRET + ADMIN_PASSWORD_HASH
+cp .env.example .env              # paste the values in, set ADMIN_USER
+# Add INSECURE_COOKIES=1 to .env for local http dev
+npm run dev
 ```
 
-### Updating Profile Picture
+Public site: `http://localhost:3000`  
+Editor: `http://admin.localhost:3000`
 
-Replace `public/images/profile.jpg` with your own image. Recommended size: 400x400px or larger, square aspect ratio.
+### Environment variables
 
-### Updating Resume
+The minimum required set (see `.env.example` for all options):
 
-Replace `public/resume.pdf` with your own resume. The download is triggered from the About page.
-
-### Customizing Personal Information
-
-Update the following files with your information:
-
-**Hero Section** (`components/Hero.tsx`):
-```typescript
-const systemInfo = [
-  { label: 'user', value: 'your@email' },
-  { label: 'alias', value: 'your-alias' },
-  { label: 'role', value: 'Your Role' },
-  { label: 'location', value: 'Your Location' },
-  // ...
-];
-```
-
-**Header Info Card** (`components/Header.tsx`):
-```typescript
-// Update name, age, role, etc. in the InfoCard modal
-```
-
-**Contact Page** (`app/[lang]/contact/page.tsx`):
-```typescript
-const contacts = [
-  { label: 'email', value: 'your@email.com', href: 'mailto:your@email.com' },
-  // ...
-];
-```
-
-### Changing Color Scheme
-
-Update the terminal colors in `tailwind.config.ts`:
-
-```typescript
-colors: {
-  terminal: {
-    bg: {
-      dark: '#1e2326',  // Background (Everforest)
-    },
-    text: {
-      dark: '#d3c6aa',  // Text
-    },
-    accent: {
-      red: '#e67e80',
-      orange: '#e69875',
-      yellow: '#dbbc7f',
-      green: '#a7c080',
-      cyan: '#83c092',
-      blue: '#7fbbb3',
-      purple: '#d699b6',
-      magenta: '#d699b6',
-      pink: '#d699b6',
-      amber: '#e69875',
-    }
-  }
-}
-```
-
-### Visitor Counter
-
-The visitor counter in the footer:
-- Starts at 547
-- Increments once per browser session
-- Stored in localStorage (client-side only)
-- Can be reset by clearing browser storage
-- Customize starting value in `components/Footer.tsx`:
-
-```typescript
-const [visitorCount, setVisitorCount] = useState<number>(547); // Change 547 to your desired starting number
-```
-
-## Pages
-
-- **Home** (`/en`): Hero section, about preview, tech stack, featured projects, contact preview
-- **About** (`/en/about`): Full bio, technical skills, interests, resume download
-- **Projects** (`/en/projects`): Portfolio projects with detailed descriptions and tech stacks
-- **Contact** (`/en/contact`): Contact methods, availability status, timezone
-
-## Features Explained
-
-### Info Card
-Click the `[INFO]` button in the header to see a quick profile card with your picture, name, role, and bio. On mobile, this appears as `[i]`.
-
-### Navigation Menu
-Click `[MENU]` (or `[≡]` on mobile) to access all pages. The current page is highlighted with `[ACTIVE]` indicator and cyan accent color.
-
-### Visitor Counter
-Displayed in the footer, tracks total unique sessions. Increments once per browser session using sessionStorage, with persistent count in localStorage.
-
-### Resume Download
-Available on the About page. Downloads the resume as `ALIREZA-GHOTBI-Resume.pdf` when clicked.
-
-### Back link
-Every page has a `cd ..` link at the top (except the home page) that returns to the previous page, or to a sensible parent if the page was opened directly.
-
-## Browser Support
-
-- ✅ Chrome 90+ (desktop & mobile)
-- ✅ Firefox 88+ (desktop & mobile)
-- ✅ Safari 14+ (desktop & mobile)
-- ✅ Edge 90+
-- ✅ iOS Safari 14+
-- ✅ Chrome Mobile / Android
-
-## Performance
-
-- **Static Generation**: All pages pre-rendered at build time
-- **Optimized Images**: Next.js Image component for automatic optimization
-- **Minimal JavaScript**: ~150KB total bundle size
-- **CSS-in-JS**: Tailwind CSS for minimal runtime overhead
-- **Fast Load Times**: First Contentful Paint < 1.5s on 3G
-- **Lighthouse Score**: 95+ on all metrics
-
-## Accessibility
-
-- ✅ Semantic HTML5 structure
-- ✅ Full keyboard navigation support
-- ✅ `prefers-reduced-motion` support (disables animations)
-- ✅ ARIA labels on interactive elements
-- ✅ High contrast ratios (WCAG AA compliant)
-- ✅ Screen reader friendly
-- ✅ Mobile touch target sizes (48x48px minimum)
-
-## Mobile Optimizations
-
-- Responsive typography (scales from xs to md)
-- Touch-friendly tap targets
-- Optimized spacing for smaller screens
-- Scrollable modals with max-height
-- Hamburger menu for mobile navigation
-- Flexible grid layouts
+| Variable              | Description                              |
+|-----------------------|------------------------------------------|
+| `SESSION_SECRET`      | Random secret for signing session cookies |
+| `ADMIN_USER`          | Admin username                           |
+| `ADMIN_PASSWORD_HASH` | scrypt hash — generate with `scripts/hash-password.mjs` |
+| `DATA_DIR`            | Directory for `site.db` and `uploads/` (default: `./data`) |
+| `INSECURE_COOKIES`    | Set to `1` for local http development    |
 
 ## Deployment
 
-> The blog/editor stores data in SQLite on disk, so deploy on something with a persistent disk (your VPS + Docker). Vercel/Netlify serverless hosting won't keep the database or uploads. See "Blog, editor and backend" below.
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full VPS, Docker, and reverse proxy instructions.
 
-### Vercel (Recommended)
+> **Note:** This app uses SQLite on disk. Serverless platforms (Vercel, Netlify) won't persist the database or uploaded images — deploy on a VPS or any host with a persistent disk volume.
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
+## Documentation
 
-# Deploy
-vercel
-```
-
-### Netlify
-
-```bash
-# Build command
-npm run build
-
-# Publish directory
-.next
-```
-
-### Docker
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
-
-## Environment Variables
-
-The blog backend needs `SESSION_SECRET`, `ADMIN_USER` and `ADMIN_PASSWORD_HASH` (see `.env.example`). Other optional variables, e.g. analytics, go in `.env.local`:
-
-```bash
-# Example
-NEXT_PUBLIC_GA_ID=your-ga-id
-NEXT_PUBLIC_SITE_URL=https://yourdomain.com
-```
-
-## Roadmap
-
-- [x] Blog section (Markdown, SQLite, private editor)
-- [x] Projects managed from the editor (SQLite)
-- [ ] Project detail pages with screenshots
-- [ ] Contact form with backend integration
-- [ ] Analytics integration
-- [ ] RSS feed
-- [ ] PWA support
-
-## Troubleshooting
-
-### Build errors
-```bash
-# Clear Next.js cache
-rm -rf .next
-
-# Reinstall dependencies
-rm -rf node_modules
-npm install
-
-# Rebuild
-npm run build
-```
+| File | Contents |
+|------|----------|
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | VPS install script, Docker Compose, Nginx config |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Host routing, blog/editor design, auth, comments, data model |
+| [`docs/CUSTOMIZATION.md`](docs/CUSTOMIZATION.md) | Color scheme, fonts, visitor counter, adding static content |
+| [`docs/INSTALL_DEPS.md`](docs/INSTALL_DEPS.md) | Extra npm packages required (`archiver`, `adm-zip`) |
 
 ## License
 
-Personal portfolio - All rights reserved.
-
-Feel free to use this as inspiration for your own portfolio, but please don't directly copy the content.
+Personal portfolio — all rights reserved.  
+Feel free to use this as inspiration, but don't copy the content directly.
 
 ## Contact
 
 - **Email**: dev@tirok.ir
 - **Telegram**: [@xyaes](https://t.me/xyaes)
-- **GitHub**: [tirok547](https://github.com/tirok547)
-
----
-
-Built with ❤️ and ⌨️ by tirok
-
-**Tech Stack**: Next.js 15 • TypeScript • Tailwind CSS • React 18
-
-## Blog, editor and backend
-
-One Next.js app serves two hostnames and stores everything in a single SQLite file.
-
-| Host | What it is |
-| --- | --- |
-| `portfolio.tirok.ir` | public site: `/en/blog`, `/en/blog/<slug>` (with comments), latest posts on the home page, projects and site info from the DB |
-| `admin.tirok.ir` | private editor (login required): posts, drafts, categories, `#tags`, image upload, projects, comments, site settings |
-
-- The public blog supports filtering posts by category and tag. Published posts show comments, and the home page displays recent posts.
-- Projects can be reordered in the editor; project content and ordering are stored in SQLite.
-- Data: `DATA_DIR/site.db` (posts, categories, tags, projects, comments, settings) and `DATA_DIR/uploads/` (images). Back up both.
-- Posts are Markdown (headers, lists, code, tables, images). Raw HTML is sanitized.
-- Projects are seeded once from `lib/seed-projects.ts`; after that they're edited from the editor.
-- Auth: single admin, scrypt password hash, signed httpOnly cookie, login rate limit, same-origin check on every write.
-- Site settings (`/settings` in the editor) hold the info that used to be hard-coded: name, role, location, birth date (age is computed), bio, contact details and availability, the tech stack lists, skills, interests and the resume "last updated" text. Defaults live in `lib/settings.ts`.
-- Comments: anyone can comment on a published post with just a username (no login). Guarded by same-origin check, a honeypot field, a per-IP rate limit (5 per 10 minutes), a link limit, and reserved usernames (your alias/name can't be impersonated). You reply to or delete comments from `/comments` in the editor; replies show an `[owner]` tag, and deleting a comment deletes its replies.
-- Any host starting with `admin.` is the editor, so locally use `http://admin.localhost:3000`.
-
-### Setup
-
-#### Local development
-
-```bash
-npm install
-node scripts/hash-password.mjs      # prints SESSION_SECRET + ADMIN_PASSWORD_HASH (or pass a password as an argument)
-cp .env.example .env                # paste them in, set ADMIN_USER
-# dev over http: add INSECURE_COOKIES=1 to .env
-npm run dev                         # http://localhost:3000 and http://admin.localhost:3000
-```
-
-#### VPS installation
-
-`scripts/install.sh` automates a production install on a Linux VPS. It expects Git, Docker with Compose, Nginx, Certbot, Node.js 18+, `curl`, and `unzip` to be installed already. Run it as a user with permission to write under `/opt` (or the chosen install directory), manage Nginx and reload system services, and access Docker volumes:
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/TIROK547/portfolio/main/scripts/install.sh)
-```
-
-The installer asks for your base domain (it configures `portfolio.<domain>` and `admin.<domain>`), install directory (defaults to `/opt/portfolio`), admin username and password, an optional backup ZIP to restore, and an email for Let's Encrypt. It generates the session secret and password hash, writes `.env`, builds and starts the Docker Compose service, configures Nginx to send both hostnames to the app, and obtains TLS certificates with Certbot. Point both DNS records at the VPS first. Re-running in an existing Git checkout pulls the latest version before rebuilding.
-
-The optional restore expects a backup ZIP containing `site.db` and, if present, an `uploads/` directory. Backups can also be downloaded and restored later from the admin panel's backup/restore controls. Keep a copy of backup ZIPs somewhere outside the server.
-
-For manual production deployment, configure `.env` as above and run `docker compose up -d --build`. The app listens on `127.0.0.1:3000`; proxy both hostnames to it and preserve the `Host` header. The Docker named volume keeps the database and uploaded images across container rebuilds.
-
-For Debian/Ubuntu dependency guidance, see [`docs/INSTALL_DEPS.md`](docs/INSTALL_DEPS.md).
-
-### Reverse proxy
-
-Both hostnames go to the same upstream. Keep the `Host` header and pass the client IP (used for the login and comment rate limits):
-
-```nginx
-server {
-    server_name portfolio.tirok.ir admin.tirok.ir;
-    client_max_body_size 10m;              # image uploads are capped at 8 MB
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-(TLS via certbot as usual. With Cloudflare Tunnel, point both hostnames at `http://localhost:3000`; the original Host is preserved.)
+- **GitHub**: [TIROK547](https://github.com/TIROK547)
