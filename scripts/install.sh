@@ -342,7 +342,35 @@ certbot --nginx \
 
 ok "SSL certificates installed."
 
-# ── 12. done ──────────────────────────────────────────────────────────────────
+# ── 12. install tirok CLI ─────────────────────────────────────────────────────
+log "Installing tirok CLI…"
+
+CLI_SRC="${INSTALL_DIR}/scripts/cli/tirok.py"
+CLI_DST="/usr/local/bin/tirok"
+
+if [[ ! -f "$CLI_SRC" ]]; then
+  warn "CLI script not found at ${CLI_SRC} — skipping CLI install."
+else
+  # Ensure python3 is available (it's on every Ubuntu 22.04+ by default)
+  command -v python3 >/dev/null 2>&1 || apt_get install -y python3
+
+  cat > "$CLI_DST" <<WRAPPER
+#!/usr/bin/env bash
+# tirok CLI wrapper — managed by install.sh
+exec python3 "${CLI_SRC}" "\$@"
+WRAPPER
+
+  chmod +x "$CLI_DST"
+
+  # Bake the install dir into the CLI so it always finds docker-compose.yml
+  # and the data volume, even if invoked from another directory.
+  sed -i "s|INSTALL_DIR.*=.*os.environ.get.*|INSTALL_DIR = os.environ.get(\"TIROK_DIR\", \"${INSTALL_DIR}\")|" "$CLI_SRC"
+
+  ok "tirok CLI installed → ${CLI_DST}"
+  log "Run 'tirok' for the interactive TUI, or 'tirok --help' for all commands."
+fi
+
+# ── 13. done ──────────────────────────────────────────────────────────────────
 echo
 echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════╗${RESET}"
 echo -e "${GREEN}${BOLD}║          Installation complete! 🎉           ║${RESET}"
@@ -350,6 +378,8 @@ echo -e "${GREEN}${BOLD}╚═════════════════�
 echo
 echo -e "  ${CYAN}Portfolio:${RESET}  https://${PORTFOLIO_DOMAIN}"
 echo -e "  ${CYAN}Admin:${RESET}      https://${ADMIN_DOMAIN}"
+echo -e "  ${CYAN}CLI:${RESET}        tirok         (TUI)"
+echo -e "  ${CYAN}CLI:${RESET}        tirok --help  (all commands)"
 echo
-echo -e "  ${YELLOW}Tip:${RESET} run '${COMPOSE} logs -f' from ${INSTALL_DIR} to tail logs."
+echo -e "  ${YELLOW}Tip:${RESET} run 'tirok logs -f' to tail logs, 'tirok backup' to snapshot data."
 echo
