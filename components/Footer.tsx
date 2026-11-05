@@ -10,6 +10,7 @@ export default function Footer() {
     const storedCount = localStorage.getItem('visitorCount');
 
     if (storedCount) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync persisted state after hydration.
       setVisitorCount(parseInt(storedCount));
     } else {
       // First visit, set to 547

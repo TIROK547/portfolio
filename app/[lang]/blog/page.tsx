@@ -50,7 +50,7 @@ export default async function BlogPage({
             {tags.length > 0 && (
               <> · tags: <span className="text-terminal-accent-yellow">{tags.map((t) => `#${t}`).join(', ')}</span></>
             )}
-            {q && <> · search: <span className="text-terminal-accent-green">"{q}"</span></>}
+            {q && <> · search: <span className="text-terminal-accent-green">&quot;{q}&quot;</span></>}
           </p>
         </div>
 

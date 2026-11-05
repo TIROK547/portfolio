@@ -7,9 +7,8 @@ import AdmZip from "adm-zip";
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
 export async function POST(req: NextRequest) {
-  // Auth check
-  const authError = await guardApi(req);
-  if (authError) return authError;
+  const denied = await guardApi(req);
+  if (denied) return denied;
 
   const contentType = req.headers.get("content-type") ?? "";
   if (!contentType.includes("multipart/form-data")) {

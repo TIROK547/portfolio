@@ -19,7 +19,7 @@ const redirect = (req: NextRequest, to: string, status = 307) => {
   return NextResponse.redirect(new URL(to, `${proto}://${req.headers.get('host')}`), status)
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const host = (req.headers.get('host') ?? '').split(':')[0].toLowerCase()
   const { pathname } = req.nextUrl
 

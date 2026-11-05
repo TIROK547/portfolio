@@ -14,6 +14,8 @@ export default function CommentForm({ postSlug }: { postSlug: string }) {
 
   useEffect(() => {
     try {
+      // Read browser state after hydration so server and initial client markup match.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuthor(localStorage.getItem('commentAuthor') ?? '')
     } catch {}
   }, [])

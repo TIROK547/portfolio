@@ -74,7 +74,7 @@ export default function BackupRestore() {
       <div className="space-y-2">
         <p className="font-mono text-xs text-terminal-text-dark/70">
           Downloads a zip containing <code>site.db</code> and{" "}
-          <code>uploads/</code>. Keep this file safe — it's everything.
+          <code>uploads/</code>. Keep this file safe — it&apos;s everything.
         </p>
         <button
           onClick={handleBackup}

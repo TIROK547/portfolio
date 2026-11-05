@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guardApi } from "@/lib/auth";
-import { createReadStream, statSync, readdirSync } from "fs";
+import { statSync, readdirSync } from "fs";
 import { join } from "path";
-import { createGzip } from "zlib";
 import { PassThrough } from "stream";
 import { ZipArchive } from "archiver";
 
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
 export async function GET(req: NextRequest) {
-  // Auth check
-  const authError = await guardApi(req);
-  if (authError) return authError;
+  const denied = await guardApi(req);
+  if (denied) return denied;
 
   const dbPath = join(DATA_DIR, "site.db");
   const uploadsPath = join(DATA_DIR, "uploads");
