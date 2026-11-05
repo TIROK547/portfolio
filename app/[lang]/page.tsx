@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Hero from '@/components/Hero';
 import StackDisplay from '@/components/StackDisplay';
 import ProjectCard from '@/components/ProjectCard';
@@ -9,6 +10,39 @@ import { ageFrom, bioParagraphs } from '@/lib/settings';
 // Projects and posts live in SQLite, so render per request instead of at build time.
 export const dynamic = 'force-dynamic';
 
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const isEn = lang === 'en';
+  return {
+    title: isEn ? 'Alireza Ghotbi — Backend Developer' : 'علیرضا قطبی — توسعه‌دهنده بک‌اند',
+    description: isEn
+      ? 'Backend developer specializing in Python (Django, FastAPI), Go, PostgreSQL, Redis, and Docker. Building scalable services from Tehran, Iran.'
+      : 'توسعه‌دهنده بک‌اند متخصص در Python، Django، FastAPI، Go، PostgreSQL، Redis و Docker.',
+    alternates: {
+      canonical: `https://portfolio.tirok.ir/${lang}`,
+      languages: {
+        en: 'https://portfolio.tirok.ir/en',
+        fa: 'https://portfolio.tirok.ir/fa',
+      },
+    },
+    openGraph: {
+      url: `https://portfolio.tirok.ir/${lang}`,
+    },
+  };
+}
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Alireza Ghotbi (TIROK) Portfolio',
+  url: 'https://portfolio.tirok.ir',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: { '@type': 'EntryPoint', urlTemplate: 'https://portfolio.tirok.ir/en/blog?q={search_term_string}' },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 export default function HomePage() {
   const featuredProjects = listProjects({ featuredOnly: true });
   const latestPosts = listPosts({ publishedOnly: true, limit: 3 });
@@ -18,6 +52,10 @@ export default function HomePage() {
 
   return (
     <div className="space-y-0">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       {/* Hero Section */}
       <Hero info={{ name: profile.name, alias: profile.alias, role: profile.role, location: profile.location, age }} stack={stack} locale="en" />
 

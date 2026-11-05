@@ -1,7 +1,28 @@
+import type { Metadata } from 'next';
 import BackLink from '@/components/BackLink';
 import { getSettings } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return {
+    title: 'Contact',
+    description: 'Get in touch with Alireza Ghotbi — available for freelance backend projects and collaborations. Reach via email, Telegram, or GitHub.',
+    alternates: {
+      canonical: `https://portfolio.tirok.ir/${lang}/contact`,
+      languages: {
+        en: 'https://portfolio.tirok.ir/en/contact',
+        fa: 'https://portfolio.tirok.ir/fa/contact',
+      },
+    },
+    openGraph: {
+      title: 'Contact — Alireza Ghotbi',
+      description: 'Available for freelance backend projects. Reach out via email or Telegram.',
+      url: `https://portfolio.tirok.ir/${lang}/contact`,
+    },
+  };
+}
 
 export default async function ContactPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;

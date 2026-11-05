@@ -21,18 +21,40 @@ const decode = (s: string) => {
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { slug } = await params
+  const { lang, slug } = await params
   const post = getPostBySlug(decode(slug))
   if (!post) return { title: 'Not found' }
+  const url = `https://portfolio.tirok.ir/${lang}/blog/${slug}`
+  const images = post.coverImage
+    ? [{ url: post.coverImage, width: 1200, height: 630, alt: post.title }]
+    : [{ url: '/og-default.jpg', width: 1200, height: 630, alt: post.title }]
   return {
-    title: `${post.title} - tirok`,
+    title: post.title,
     description: post.excerpt,
+    alternates: {
+      canonical: url,
+      languages: {
+        en: `https://portfolio.tirok.ir/en/blog/${slug}`,
+        fa: `https://portfolio.tirok.ir/fa/blog/${slug}`,
+      },
+    },
     openGraph: {
       title: post.title,
       description: post.excerpt,
       type: 'article',
+      url,
+      siteName: 'Alireza Ghotbi (TIROK)',
       publishedTime: post.publishedAt ?? undefined,
-      images: post.coverImage ? [post.coverImage] : undefined,
+      modifiedTime: post.updatedAt,
+      authors: ['Alireza Ghotbi'],
+      tags: post.tags,
+      images,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+      images: images.map((i) => i.url),
     },
   }
 }
@@ -42,8 +64,55 @@ export default async function PostPage({ params }: { params: Params }) {
   const post = getPostBySlug(decode(slug))
   if (!post) notFound()
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `https://portfolio.tirok.ir/${lang}` },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `https://portfolio.tirok.ir/${lang}/blog` },
+      { '@type': 'ListItem', position: 3, name: post.title, item: `https://portfolio.tirok.ir/${lang}/blog/${slug}` },
+    ],
+  }
+
+  const blogPostingJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    url: `https://portfolio.tirok.ir/${lang}/blog/${slug}`,
+    datePublished: post.publishedAt ?? post.createdAt,
+    dateModified: post.updatedAt,
+    author: {
+      '@type': 'Person',
+      name: 'Alireza Ghotbi',
+      url: 'https://portfolio.tirok.ir',
+    },
+    publisher: {
+      '@type': 'Person',
+      name: 'Alireza Ghotbi',
+      url: 'https://portfolio.tirok.ir',
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://portfolio.tirok.ir/${lang}/blog/${slug}`,
+    },
+    ...(post.coverImage ? { image: post.coverImage } : {}),
+    ...(post.category ? { articleSection: post.category.name } : {}),
+    ...(post.tags.length > 0 ? { keywords: post.tags.join(', ') } : {}),
+    timeRequired: `PT${post.readingMinutes}M`,
+    inLanguage: lang,
+  }
+
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <article className="max-w-3xl mx-auto">
         <BackLink fallback={`/${lang}/blog`} />
 
@@ -83,7 +152,7 @@ export default async function PostPage({ params }: { params: Params }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={post.coverImage}
-            alt=""
+            alt={`Cover image for "${post.title}"`}
             className="w-full max-h-[420px] object-cover mb-8 border border-terminal-text-light/20 dark:border-terminal-text-dark/20"
           />
         )}

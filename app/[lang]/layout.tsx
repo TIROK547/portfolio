@@ -11,6 +11,15 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ lang: locale }))
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params
+  return {
+    other: {
+      'content-language': lang === 'fa' ? 'fa-IR' : 'en-US',
+    },
+  }
+}
+
 export default async function LangLayout({
   children,
   params,

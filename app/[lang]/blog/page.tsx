@@ -4,9 +4,26 @@ import BlogFilters from '@/components/BlogFilters'
 import { listCategories, listPosts, listTags } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
-export const metadata = {
-  title: 'Blog - Alireza Ghotbi (tirok)',
-  description: 'Daily experiences and thoughts on software, servers and study.',
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params
+  return {
+    title: 'Blog',
+    description: 'Technical blog by Alireza Ghotbi — backend architecture, Go, Python, Django, server ops, and dev notes.',
+    alternates: {
+      canonical: `https://portfolio.tirok.ir/${lang}/blog`,
+      languages: {
+        en: 'https://portfolio.tirok.ir/en/blog',
+        fa: 'https://portfolio.tirok.ir/fa/blog',
+      },
+    },
+    openGraph: {
+      title: 'Blog — Alireza Ghotbi',
+      description: 'Technical blog on backend architecture, Go, Python, Django, and server ops.',
+      url: `https://portfolio.tirok.ir/${lang}/blog`,
+      type: 'website',
+    },
+  }
 }
 
 type SP = Promise<{ tag?: string | string[]; category?: string | string[]; q?: string }>

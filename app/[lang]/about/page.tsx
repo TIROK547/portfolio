@@ -1,9 +1,33 @@
+import type { Metadata } from 'next';
 import TechIcon from "@/components/TechIcon";
 import BackLink from "@/components/BackLink";
 import { getSettings } from "@/lib/db";
 import { ageFrom, bioParagraphs } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  const { profile } = getSettings();
+  const age = ageFrom(profile.birthDate);
+  const description = `${profile.name} is a ${age}-year-old backend developer from Tehran, Iran. Specializes in Python, Django, FastAPI, Go, PostgreSQL, and Docker.`;
+  return {
+    title: `About — ${profile.name}`,
+    description,
+    alternates: {
+      canonical: `https://portfolio.tirok.ir/${lang}/about`,
+      languages: {
+        en: 'https://portfolio.tirok.ir/en/about',
+        fa: 'https://portfolio.tirok.ir/fa/about',
+      },
+    },
+    openGraph: {
+      title: `About ${profile.name}`,
+      description,
+      url: `https://portfolio.tirok.ir/${lang}/about`,
+    },
+  };
+}
 
 export default async function AboutPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
