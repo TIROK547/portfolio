@@ -13,16 +13,17 @@ Live at [portfolio.tirok.ir](https://portfolio.tirok.ir) · Editor at [admin.tir
 - **Visitor counter** — session-based, starts at 547, stored in localStorage
 - **Resume download** — one-click PDF download from the About page
 - **i18n-ready routing** — pages live under `/[lang]/` (currently `en`)
+- **`tirok` CLI + TUI** — manage everything from the terminal: posts, projects, logs, backups, service control
 
 ## Tech Stack
 
-| Layer    | Tech                                         |
-|----------|----------------------------------------------|
+| Layer    | Tech                                          |
+|----------|-----------------------------------------------|
 | Frontend | Next.js 15 (App Router), React 18, TypeScript |
 | Styling  | Tailwind CSS, Everforest color scheme, JetBrains Mono |
 | Backend  | Next.js API routes, SQLite (`better-sqlite3`) |
 | Auth     | scrypt password hash, signed httpOnly cookie  |
-| Infra    | Docker, Nginx reverse proxy, VPS             |
+| Infra    | Docker, Nginx reverse proxy, VPS              |
 
 ## Project Structure
 
@@ -37,8 +38,10 @@ portfolio/
 │   ├── admin/          # Admin forms, lists, backup/restore UI
 │   └── ...             # Shared public-site and blog components
 ├── lib/                # Database, auth, validation, settings defaults
-├── scripts/            # Password utility, VPS installer
-├── docs/               # Extended documentation (see below)
+├── scripts/
+│   ├── cli/            # tirok CLI + TUI (tirok.py, tirok.1 man page)
+│   └── ...             # Password utility, VPS installer
+├── docs/               # Extended documentation
 ├── public/             # Static assets and downloadable resume
 ├── Dockerfile
 ├── docker-compose.yml
@@ -64,15 +67,47 @@ Editor: `http://admin.localhost:3000`
 
 ### Environment variables
 
-The minimum required set (see `.env.example` for all options):
+| Variable              | Description                                                       |
+|-----------------------|-------------------------------------------------------------------|
+| `SESSION_SECRET`      | Random secret for signing session cookies                         |
+| `ADMIN_USER`          | Admin username                                                    |
+| `ADMIN_PASSWORD_HASH` | scrypt hash — generate with `scripts/hash-password.mjs`          |
+| `DATA_DIR`            | Directory for `site.db` and `uploads/` (default: `./data`)       |
+| `INSECURE_COOKIES`    | Set to `1` for local http development                             |
 
-| Variable              | Description                              |
-|-----------------------|------------------------------------------|
-| `SESSION_SECRET`      | Random secret for signing session cookies |
-| `ADMIN_USER`          | Admin username                           |
-| `ADMIN_PASSWORD_HASH` | scrypt hash — generate with `scripts/hash-password.mjs` |
-| `DATA_DIR`            | Directory for `site.db` and `uploads/` (default: `./data`) |
-| `INSECURE_COOKIES`    | Set to `1` for local http development    |
+## tirok CLI
+
+The install script puts a `tirok` command on the server's `PATH`. It is the primary way to manage the site over SSH — no browser required. It talks directly to the SQLite database and wraps `docker compose` for service control.
+
+```bash
+tirok                        # open the interactive TUI
+tirok --help                 # full command reference
+man tirok                    # man page
+
+tirok post ls                # list all posts
+tirok post add               # write a new post (opens $EDITOR)
+tirok post add --json p.json # import from JSON (single object or array)
+tirok post edit <id|slug>    # edit an existing post
+tirok post rm  <id|slug>     # delete a post
+tirok post export            # dump all posts to JSON
+
+tirok project ls             # list all projects
+tirok project add            # add a project interactively
+tirok project add --json f   # import from JSON
+tirok project edit <id>      # edit a project
+tirok project rm  <id>       # delete a project
+
+tirok logs -f                # tail live logs
+tirok status                 # container + DB summary
+tirok start / stop / restart # service control
+
+tirok backup                 # snapshot to /var/backups/tirok/
+tirok restore                # pick a backup and restore
+tirok update                 # pull latest code and rebuild
+tirok uninstall              # remove everything
+```
+
+See [`docs/CLI.md`](docs/CLI.md) for the full reference, JSON schemas, and examples.
 
 ## Deployment
 
@@ -84,6 +119,7 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full VPS, Docker, and reverse
 
 | File | Contents |
 |------|----------|
+| [`docs/CLI.md`](docs/CLI.md) | `tirok` CLI + TUI reference, JSON schemas, examples |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | VPS install script, Docker Compose, Nginx config |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Host routing, blog/editor design, auth, comments, data model |
 | [`docs/CUSTOMIZATION.md`](docs/CUSTOMIZATION.md) | Color scheme, fonts, visitor counter, adding static content |

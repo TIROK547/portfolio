@@ -367,6 +367,17 @@ WRAPPER
   sed -i "s|INSTALL_DIR.*=.*os.environ.get.*|INSTALL_DIR = os.environ.get(\"TIROK_DIR\", \"${INSTALL_DIR}\")|" "$CLI_SRC"
 
   ok "tirok CLI installed → ${CLI_DST}"
+
+  # Install man page
+  MAN_SRC="${INSTALL_DIR}/scripts/cli/tirok.1"
+  if [[ -f "$MAN_SRC" ]]; then
+    MAN_DIR="/usr/local/share/man/man1"
+    mkdir -p "$MAN_DIR"
+    gzip -c "$MAN_SRC" > "${MAN_DIR}/tirok.1.gz"
+    command -v mandb >/dev/null 2>&1 && mandb -q 2>/dev/null || true
+    ok "man page installed → man tirok"
+  fi
+
   log "Run 'tirok' for the interactive TUI, or 'tirok --help' for all commands."
 fi
 

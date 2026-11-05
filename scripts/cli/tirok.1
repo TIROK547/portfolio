@@ -1,0 +1,292 @@
+.TH TIROK 1 "2026" "tirok" "Portfolio Management Tool"
+.SH NAME
+tirok \- portfolio management CLI and TUI
+.SH SYNOPSIS
+.B tirok
+.br
+.B tirok
+.I command
+.RI [ options ]
+.RI [ arguments ]
+.SH DESCRIPTION
+.B tirok
+is the terminal management tool for the TIROK portfolio site.
+Run it with no arguments to open the interactive full-screen TUI,
+or pass a command for one-shot use from scripts and your shell history.
+.PP
+It talks directly to the SQLite database
+.RI ( site.db )
+inside the Docker volume and wraps
+.B docker compose
+for service control \(em no HTTP session or browser required.
+.SH TUI
+Launching
+.B tirok
+with no arguments opens a curses-based menu. Navigate with the arrow keys or
+.BR j / k ,
+select with
+.BR Enter ,
+and go back with
+.BR Esc
+or
+.BR q .
+.PP
+Submenus are available for Posts and Projects. Any operation that needs
+terminal interaction (writing content, confirming a deletion, tailing logs)
+drops out of the TUI cleanly and returns to the menu when done.
+.SH COMMANDS
+.SS Posts
+.TP
+.B tirok post ls
+List all posts. Output columns: id, status, title, slug. Newest first.
+.TP
+.B tirok post add
+Interactive mode. Prompts for title, slug, category, tags, cover image, and
+status, then opens
+.B $EDITOR
+for the Markdown content.
+.TP
+.BI "tirok post add \-\-json " FILE
+Non-interactive. Reads post data from a JSON file.
+.I FILE
+may contain a single post object or a JSON array for bulk import.
+.TP
+.BI "tirok post edit " "id|slug"
+Re-opens the interactive editor with current values pre-filled.
+Accepts a numeric id or the post slug.
+.TP
+.BI "tirok post rm " "id|slug"
+Prompts for confirmation, then permanently deletes the post, its tags,
+and its comments.
+.TP
+.BI "tirok post import " FILE
+Alias for
+.BI "tirok post add \-\-json " FILE \fR.
+.TP
+.B tirok post export
+.TQ
+.BI "tirok post export " FILE
+Dump all posts (including content and tags) to JSON.
+Prints to stdout if no path is given.
+.SS Projects
+.TP
+.B tirok project ls
+List all projects. Output columns: id, status, featured flag, name, GitHub URL.
+.TP
+.B tirok project add
+.TQ
+.BI "tirok project add \-\-json " FILE
+Add a project. Interactive or JSON-driven (single object or array).
+.TP
+.BI "tirok project edit " id
+Re-open the interactive editor for an existing project.
+.TP
+.BI "tirok project rm " id
+Delete a project after confirmation.
+.TP
+.BI "tirok project import " FILE
+Alias for
+.BI "tirok project add \-\-json " FILE \fR.
+.SS Service control
+.TP
+.B tirok start
+.TQ
+.B tirok stop
+.TQ
+.B tirok restart
+Pass-through to
+.B docker compose start / stop / restart
+using the compose file at
+.RI $ TIROK_DIR /docker-compose.yml
+(default:
+.IR /opt/portfolio/docker-compose.yml ).
+.SS Logs
+.TP
+.B tirok logs
+.TQ
+.BI "tirok logs \-n " N
+.TQ
+.B tirok logs \-f
+.TQ
+.BI "tirok logs \-n " N " \-f"
+Show container logs.
+.B \-n
+sets the number of tail lines (default: 80).
+.B \-f
+streams new log lines live; press Ctrl-C to stop.
+.SS Status
+.TP
+.B tirok status
+Print the Docker container state, database path, backup count in
+.IR /var/backups/tirok/ ,
+total posts (published vs draft), and project count.
+.SS Backup
+.TP
+.B tirok backup
+Zip
+.I site.db
+and the
+.I uploads/
+directory from the Docker volume into
+.IR /var/backups/tirok/tirok_backup_YYYYMMDD_HHMMSS.zip .
+Automatically prunes to keep the 10 most recent backups. Also called
+automatically before
+.B update
+and
+.BR uninstall .
+.SS Restore
+.TP
+.B tirok restore
+.TQ
+.BI "tirok restore " FILE
+With no argument, lists all backups in
+.I /var/backups/tirok/
+and prompts for a selection. With a path, restores that specific zip directly.
+.PP
+The restore sequence: stop the service \(-> overwrite
+.I site.db
+and
+.I uploads/
+in the Docker volume \(-> restart the service.
+.SS Update
+.TP
+.B tirok update
+Create a backup, run
+.B git pull origin main
+inside the install directory, then
+.B docker compose up \-d \-\-build
+to rebuild and restart the container.
+.SS Uninstall
+.TP
+.B tirok uninstall
+Prompts for
+.I yes
+confirmation, then: creates a final backup, runs
+.B docker compose down \-v
+(removes containers and the data volume), removes the Nginx site config,
+removes
+.IR /opt/portfolio ,
+and removes
+.IR /usr/local/bin/tirok .
+Backups in
+.I /var/backups/tirok/
+are
+.B not
+deleted.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Print the command reference and exit.
+.TP
+.BR \-n " " \fIN\fR ", " \-\-lines " " \fIN\fR
+(logs only) Number of log lines to tail. Default: 80.
+.TP
+.BR \-f ", " \-\-follow
+(logs only) Stream log output live.
+.TP
+.BR \-\-json " " \fIFILE\fR
+(post add, project add) Read data from a JSON file instead of interactive prompts.
+.SH JSON SCHEMAS
+.SS Post
+.nf
+{
+  "title":      "My Post Title",        \fR(required)\fP
+  "content":    "# Heading\\n\\nBody.",  \fR(required, Markdown)\fP
+  "slug":       "my-post-title",        \fR(auto if omitted)\fP
+  "excerpt":    "Short summary.",       \fR(auto if omitted)\fP
+  "category":   "Dev",                  \fR(created if new)\fP
+  "tags":       ["go", "backend"],      \fR(created if new)\fP
+  "coverImage": "https://\&.../cover.jpg", \fR(https:// or /uploads/)\fP
+  "status":     "draft"                 \fR("draft" or "published")\fP
+}
+.fi
+.SS Project
+.nf
+{
+  "name":        "calcirok",             \fR(required)\fP
+  "description": "Kernel calculator.",   \fR(required)\fP
+  "github":      "https://github.com/\&...", \fR(required)\fP
+  "stack":       ["C++", "Linux"],
+  "status":      "wip",                  \fR("active" | "wip" | "archived")\fP
+  "featured":    true,
+  "sortOrder":   0
+}
+.fi
+.SH ENVIRONMENT
+.TP
+.B TIROK_DIR
+Install directory containing
+.IR docker-compose.yml .
+Default:
+.IR /opt/portfolio .
+.TP
+.B EDITOR
+Text editor opened for post and project content. Default:
+.BR nano .
+.SH FILES
+.TP
+.I /usr/local/bin/tirok
+The installed CLI wrapper.
+.TP
+.I /opt/portfolio/scripts/cli/tirok.py
+The Python script invoked by the wrapper.
+.TP
+.I /opt/portfolio/docker-compose.yml
+Docker Compose configuration used for service control.
+.TP
+.I /var/lib/docker/volumes/portfolio_portfolio-data/_data/site.db
+SQLite database accessed directly by the CLI.
+.TP
+.I /var/backups/tirok/
+Backup destination. Zip files named
+.IR tirok_backup_YYYYMMDD_HHMMSS.zip .
+.SH EXAMPLES
+.PP
+Open the interactive TUI:
+.RS
+.B tirok
+.RE
+.PP
+Quick status check:
+.RS
+.B tirok status
+.RE
+.PP
+Write a post in vim:
+.RS
+.B EDITOR=vim tirok post add
+.RE
+.PP
+Seed multiple projects from a JSON file:
+.RS
+.B tirok project add \-\-json seed-projects.json
+.RE
+.PP
+Export all posts before migrating:
+.RS
+.B tirok post export backup-posts.json
+.RE
+.PP
+Tail live logs while debugging:
+.RS
+.B tirok logs \-n 200 \-f
+.RE
+.PP
+Snapshot data before making changes:
+.RS
+.B tirok backup
+.RE
+.PP
+Roll back to a previous backup interactively:
+.RS
+.B tirok restore
+.RE
+.SH SEE ALSO
+.BR docker-compose (1),
+.BR sqlite3 (1),
+.BR nano (1)
+.PP
+Full documentation:
+.I /opt/portfolio/docs/CLI.md
+.SH AUTHOR
+Alireza Ghotbi (tirok) <dev@tirok.ir>
