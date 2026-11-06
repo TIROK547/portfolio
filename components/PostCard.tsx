@@ -4,19 +4,18 @@ import { formatDate } from '@/lib/format'
 
 export default function PostCard({ post, locale = 'en' }: { post: PostSummary; locale?: string }) {
   const href = `/${locale}/blog/${post.slug}`
+  const coverSrc = post.coverImage ?? `/${locale}/blog/${post.slug}/opengraph-image`
   return (
     <article className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-amber dark:hover:border-terminal-accent-amber transition-colors group flex flex-col">
-      {post.coverImage && (
-        <Link href={href} tabIndex={-1} aria-hidden>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={post.coverImage}
-            alt=""
-            loading="lazy"
-            className="w-full h-40 object-cover border-b border-terminal-text-light/20 dark:border-terminal-text-dark/20"
-          />
-        </Link>
-      )}
+      <Link href={href} tabIndex={-1} aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={coverSrc}
+          alt=""
+          loading="lazy"
+          className="w-full h-40 object-cover border-b border-terminal-text-light/20 dark:border-terminal-text-dark/20"
+        />
+      </Link>
       <div className="p-4 flex flex-col gap-3 flex-1">
         <div className="text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60 flex flex-wrap gap-x-3">
           <span>{formatDate(post.publishedAt)}</span>

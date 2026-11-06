@@ -93,7 +93,7 @@ export default async function PostPage({ params }: { params: Params }) {
       '@type': 'WebPage',
       '@id': `https://portfolio.tirok.ir/${lang}/blog/${slug}`,
     },
-    ...(post.coverImage ? { image: post.coverImage } : {}),
+    image: post.coverImage ?? `https://portfolio.tirok.ir/${lang}/blog/${slug}/opengraph-image`,
     ...(post.category ? { articleSection: post.category.name } : {}),
     ...(post.tags.length > 0 ? { keywords: post.tags.join(', ') } : {}),
     timeRequired: `PT${post.readingMinutes}M`,
@@ -145,14 +145,12 @@ export default async function PostPage({ params }: { params: Params }) {
           <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mt-6" />
         </header>
 
-        {post.coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.coverImage}
-            alt={`Cover image for "${post.title}"`}
-            className="w-full max-h-[420px] object-cover mb-8 border border-terminal-text-light/20 dark:border-terminal-text-dark/20"
-          />
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={post.coverImage ?? `/${lang}/blog/${slug}/opengraph-image`}
+          alt={`Cover image for "${post.title}"`}
+          className="w-full max-h-[420px] object-cover mb-8 border border-terminal-text-light/20 dark:border-terminal-text-dark/20"
+        />
 
         <div className="text-sm sm:text-base">
           <Markdown>{post.content}</Markdown>
