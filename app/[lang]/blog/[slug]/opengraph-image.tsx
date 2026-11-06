@@ -26,16 +26,18 @@ export default async function Image({ params }: { params: Params }) {
   const templateBuffer = await readFile(templatePath)
   const templateBase64 = `data:image/png;base64,${templateBuffer.toString('base64')}`
 
-  // Load Press Start 2P (pixel font) for title
+  // Load Press Start 2P — must be woff, NOT woff2 (ImageResponse doesn't support woff2)
   let fontData: ArrayBuffer | null = null
   try {
     const fontRes = await fetch(
-      'https://fonts.gstatic.com/s/pressstart2p/v16/e3t4euO8T-267oIAQAu6jDQyK3nVivM.woff2',
+      'https://fonts.gstatic.com/s/pressstart2p/v16/e3t4euO8T-267oIAQAu6jDQyK3nRivNx4A.woff',
       { next: { revalidate: 86400 } }
     )
-    fontData = await fontRes.arrayBuffer()
+    if (fontRes.ok) {
+      fontData = await fontRes.arrayBuffer()
+    }
   } catch {
-    // font fetch failed — will fall back to sans-serif
+    // font fetch failed — will fall back to monospace
   }
 
   const title = post?.title ?? 'tirok blog'
