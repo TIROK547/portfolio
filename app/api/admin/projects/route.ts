@@ -1,3 +1,4 @@
+import { fetchProjectReadme } from '@/lib/project-readme'
 import { NextRequest, NextResponse } from 'next/server'
 import { guardApi } from '@/lib/auth'
 import { saveProject } from '@/lib/db'
@@ -10,5 +11,9 @@ export async function POST(req: NextRequest) {
   if (denied) return denied
   const parsed = parseProjectInput(await req.json().catch(() => null))
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
+  if (!parsed.value.description && parsed.value.github) {
+    try { parsed.value.description = await fetchProjectReadme(parsed.value.github) }
+    catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'README import failed' }, { status: 422 }) }
+  }
   return NextResponse.json(saveProject(parsed.value), { status: 201 })
 }

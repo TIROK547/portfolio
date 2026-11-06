@@ -134,3 +134,13 @@ Feel free to use this as inspiration, but don't copy the content directly.
 - **Email**: dev@tirok.ir
 - **Telegram**: [@xyaes](https://t.me/xyaes)
 - **GitHub**: [TIROK547](https://github.com/TIROK547)
+
+### Rich projects
+
+The project editor supports a short summary, a full Markdown description using the same formatting toolbar, image insertion, and write/preview/split modes as posts, optional GitHub/live links, comma-separated stack input with shared technology icons, active/in-progress/archived/abandoned status, and separate draft/published visibility. Existing projects remain published after the automatic transactional SQLite migration; new projects default to drafts. Featured projects and ordering continue to control the homepage.
+
+Add up to 20 images by upload (PNG/JPEG/GIF/WebP, 8 MB each) or HTTPS URL. Set logo/screenshot type and alt text, and move images to choose the cover (first image). Public detail pages include a thumbnail gallery and Markdown documentation.
+
+When saving an empty description with a GitHub URL, the editor imports the public repository README through the [GitHub Contents API](https://docs.github.com/en/rest/repos/contents#get-a-repository-readme). Imported Markdown is stored locally with relative links/images resolved. Existing descriptions are never automatically refreshed; use **refresh from GitHub** to replace them explicitly. Import failures leave the form unsaved with an error so edits can be retried. Private repositories can use a manual description.
+
+Run `npm run dev -- --port 3002` for the public site at `http://localhost:3002/en/projects`. The editor is at `http://admin.localhost:3002/projects` and requires the normal admin environment setup described above. Run `npm run test:projects` for migration, visibility, validation, and README regression checks.

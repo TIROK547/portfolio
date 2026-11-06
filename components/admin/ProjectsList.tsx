@@ -78,7 +78,7 @@ export default function ProjectsList({ initial }: { initial: Project[] }) {
               {p.name}
             </Link>
             {p.featured && <span className="text-xs text-terminal-accent-magenta">[home]</span>}
-            <span className="text-xs text-terminal-text-dark/60">{p.status}</span>
+            <span className="text-xs text-terminal-text-dark/60">{p.status === 'wip' ? 'in progress' : p.status} · {p.visibility}</span>
           </li>
         ))}
       </ul>

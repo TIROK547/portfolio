@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next'
-import { listPosts } from '@/lib/db'
+import { listPosts, listProjects } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
 
 const BASE = 'https://portfolio.tirok.ir'
 const LOCALES = ['en', 'fa'] as const
@@ -52,5 +54,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // DB may not be initialised at build time; that's fine
   }
 
-  return [...canonicalStatic, ...blogEntries]
+  return [...canonicalStatic, ...blogEntries, ...listProjects({ publishedOnly: true }).map((p) => ({ url: `${BASE}/en/projects/${p.id}`, alternates: { languages: Object.fromEntries(LOCALES.map((l) => [l, `${BASE}/${l}/projects/${p.id}`])) } }))]
 }

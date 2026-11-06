@@ -9,7 +9,7 @@ export const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data')
 export const UPLOAD_DIR = path.join(DATA_DIR, 'uploads')
 
 export type PostStatus = 'draft' | 'published'
-export type ProjectStatus = 'active' | 'wip' | 'archived'
+export type ProjectStatus = 'active' | 'wip' | 'archived' | 'abandoned'
 
 export interface PostSummary {
   id: number
@@ -28,6 +28,11 @@ export interface PostSummary {
 export interface Post extends PostSummary {
   content: string
 }
+export interface ProjectImage {
+  url: string
+  alt: string
+  kind: 'logo' | 'screenshot'
+}
 export interface Project {
   id: number
   name: string
@@ -35,6 +40,10 @@ export interface Project {
   stack: string[]
   github: string
   status: ProjectStatus
+  summary: string
+  liveUrl: string
+  images: ProjectImage[]
+  visibility: PostStatus
   sortOrder: number
   featured: boolean
 }
@@ -121,6 +130,25 @@ export function getDb(): Database.Database {
   db.pragma('journal_mode = WAL')
   db.pragma('foreign_keys = ON')
   db.exec(SCHEMA)
+
+  // Rebuild once to expand SQLite's status CHECK while preserving IDs and content.
+  const columns = db.prepare('PRAGMA table_info(projects)').all() as { name: string }[]
+  if (!columns.some((c) => c.name === 'visibility')) {
+    db.transaction(() => {
+      db.exec(`CREATE TABLE projects_v2 (
+        id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL,
+        stack TEXT NOT NULL DEFAULT '[]', github TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','wip','archived','abandoned')),
+        sort_order INTEGER NOT NULL DEFAULT 0, featured INTEGER NOT NULL DEFAULT 0,
+        summary TEXT NOT NULL DEFAULT '', live_url TEXT NOT NULL DEFAULT '',
+        images TEXT NOT NULL DEFAULT '[]', visibility TEXT NOT NULL DEFAULT 'published' CHECK(visibility IN ('draft','published'))
+      );
+      INSERT INTO projects_v2 (id,name,description,stack,github,status,sort_order,featured)
+        SELECT id,name,description,stack,github,status,sort_order,featured FROM projects;
+      DROP TABLE projects;
+      ALTER TABLE projects_v2 RENAME TO projects;`)
+    })()
+  }
 
   const { n } = db.prepare('SELECT COUNT(*) AS n FROM projects').get() as { n: number }
   if (n === 0) {
@@ -361,6 +389,10 @@ interface ProjectRow {
   stack: string
   github: string
   status: ProjectStatus
+  summary: string
+  live_url: string
+  images: string
+  visibility: PostStatus
   sort_order: number
   featured: number
 }
@@ -372,12 +404,17 @@ const toProject = (r: ProjectRow): Project => ({
   stack: JSON.parse(r.stack) as string[],
   github: r.github,
   status: r.status,
+  summary: r.summary,
+  liveUrl: r.live_url,
+  images: JSON.parse(r.images) as ProjectImage[],
+  visibility: r.visibility,
   sortOrder: r.sort_order,
   featured: r.featured === 1,
 })
 
-export function listProjects(opts: { featuredOnly?: boolean } = {}): Project[] {
-  const where = opts.featuredOnly ? 'WHERE featured = 1' : ''
+export function listProjects(opts: { featuredOnly?: boolean; publishedOnly?: boolean } = {}): Project[] {
+  const conditions = [opts.featuredOnly ? 'featured = 1' : '', opts.publishedOnly ? "visibility = 'published'" : ''].filter(Boolean)
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
   return (getDb().prepare(`SELECT * FROM projects ${where} ORDER BY sort_order, id`).all() as ProjectRow[]).map(
     toProject,
   )
@@ -398,17 +435,18 @@ export function saveProject(input: ProjectInput, id?: number): Project | null {
     input.status,
     input.sortOrder,
     input.featured ? 1 : 0,
+    input.summary, input.liveUrl, JSON.stringify(input.images), input.visibility,
   ]
   if (id === undefined) {
     const res = db
       .prepare(
-        'INSERT INTO projects (name, description, stack, github, status, sort_order, featured) VALUES (?,?,?,?,?,?,?)',
+        'INSERT INTO projects (name, description, stack, github, status, sort_order, featured, summary, live_url, images, visibility) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
       )
       .run(...args)
     return getProject(Number(res.lastInsertRowid))
   }
   const res = db
-    .prepare('UPDATE projects SET name=?, description=?, stack=?, github=?, status=?, sort_order=?, featured=? WHERE id=?')
+    .prepare('UPDATE projects SET name=?, description=?, stack=?, github=?, status=?, sort_order=?, featured=?, summary=?, live_url=?, images=?, visibility=? WHERE id=?')
     .run(...args, id)
   return res.changes ? getProject(id) : null
 }

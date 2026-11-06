@@ -43,8 +43,9 @@ const websiteJsonLd = {
   },
 };
 
-export default function HomePage() {
-  const featuredProjects = listProjects({ featuredOnly: true });
+export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const featuredProjects = listProjects({ featuredOnly: true, publishedOnly: true });
   const latestPosts = listPosts({ publishedOnly: true, limit: 3 });
   const { profile, contact, stack } = getSettings();
   const age = ageFrom(profile.birthDate);
@@ -93,7 +94,7 @@ export default function HomePage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {featuredProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard key={project.id} project={project} locale={lang} />
             ))}
           </div>
           <Link

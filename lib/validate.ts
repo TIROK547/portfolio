@@ -61,12 +61,12 @@ export function parseProjectInput(body: unknown): Result<ProjectInput> {
 
   const name = str(b.name, 80)?.trim()
   if (!name) return { ok: false, error: 'name is required (max 80 chars)' }
-  const description = str(b.description, 2000)?.trim()
-  if (!description) return { ok: false, error: 'description is required (max 2000 chars)' }
-  const github = str(b.github, 300)?.trim()
-  if (!github || !/^https:\/\/\S+$/.test(github)) return { ok: false, error: 'github must be an https URL' }
-  if (b.status !== 'active' && b.status !== 'wip' && b.status !== 'archived') {
-    return { ok: false, error: 'status must be active, wip or archived' }
+  const description = str(b.description ?? '', 200_000)?.trim()
+  if (description === undefined) return { ok: false, error: 'description: max 200000 characters' }
+  const github = str(b.github ?? '', 300)?.trim()
+  if (github === undefined || (github && !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/.test(github))) return { ok: false, error: 'GitHub URL must be https://github.com/owner/repository (or empty)' }
+  if (b.status !== 'active' && b.status !== 'wip' && b.status !== 'archived' && b.status !== 'abandoned') {
+    return { ok: false, error: 'status must be active, wip, archived or abandoned' }
   }
   const stack = Array.isArray(b.stack)
     ? b.stack
@@ -74,11 +74,18 @@ export function parseProjectInput(body: unknown): Result<ProjectInput> {
         .map((s) => s.trim())
         .filter(Boolean)
     : []
-  if (stack.length > 12 || stack.some((s) => s.length > 30)) {
-    return { ok: false, error: 'stack: max 12 items, 30 chars each' }
+  if (stack.length > 12 || stack.some((s) => s.length > 40)) {
+    return { ok: false, error: 'stack: max 12 items, 40 chars each' }
   }
   const sortOrder = Number.isInteger(b.sortOrder) ? (b.sortOrder as number) : 0
-  return { ok: true, value: { name, description, github, status: b.status, stack, sortOrder, featured: b.featured === true } }
+  const summary = str(b.summary ?? '', 300)?.trim()
+  const liveUrl = str(b.liveUrl ?? '', 500)?.trim()
+  if (summary === undefined || liveUrl === undefined || (liveUrl && !/^https:\/\/\S+$/.test(liveUrl))) return { ok: false, error: 'summary: max 300 characters; live URL must use https' }
+  const visibility = b.visibility ?? 'draft'
+  if (visibility !== 'draft' && visibility !== 'published') return { ok: false, error: 'invalid visibility' }
+  const images = b.images ?? []
+  if (!Array.isArray(images) || images.length > 20 || images.some((i) => !i || typeof i.url !== 'string' || i.url.length > 1000 || !isSafeUrl(i.url) || typeof i.alt !== 'string' || i.alt.length > 200 || !['logo', 'screenshot'].includes(i.kind))) return { ok: false, error: 'images: up to 20 https URLs or uploads, with alt text and logo/screenshot type' }
+  return { ok: true, value: { name, description, github, summary, liveUrl, visibility, images, status: b.status, stack, sortOrder, featured: b.featured === true } }
 }
 
 export function parseProjectOrder(body: unknown): Result<number[]> {
