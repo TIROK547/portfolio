@@ -1,11 +1,14 @@
 import { ImageResponse } from 'next/og'
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { getPostBySlug } from '@/lib/db'
 
 export const runtime = 'nodejs'
 export const contentType = 'image/png'
 export const size = { width: 1200, height: 630 }
+
+const imageDirectory = path.join(process.cwd(), 'public', 'og-defalut-images')
+const supportedImageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp'])
 
 type Params = Promise<{ lang: string; slug: string }>
 
@@ -19,15 +22,36 @@ const decode = (s: string) => {
 
 export default async function Image({ params }: { params: Params }) {
   const { slug } = await params
-  const post = getPostBySlug(decode(slug))
+  const decodedSlug = decode(slug)
+  const post = getPostBySlug(decodedSlug)
 
-  // Load background template and font in parallel
-  const [templateBuffer, fontBuffer] = await Promise.all([
-    readFile(path.join(process.cwd(), 'public', 'og-default.jpg')),
+  // Sort images so every deployment assigns slugs to the same ordered sequence.
+  const [imageFiles, fontBuffer] = await Promise.all([
+    readdir(imageDirectory),
     readFile(path.join(process.cwd(), 'app', 'fonts', 'PressStart2P.woff')),
   ])
+  const templates = imageFiles
+    .filter((file) => supportedImageExtensions.has(path.extname(file).toLowerCase()))
+    .sort((a, b) => a.localeCompare(b))
 
-  const templateBase64 = `data:image/png;base64,${templateBuffer.toString('base64')}`
+  if (templates.length === 0) {
+    throw new Error(`No supported Open Graph images found in ${imageDirectory}`)
+  }
+
+  // Stable hash distributes slugs across the ordered images without randomness.
+  const slugHash = Array.from(decodedSlug).reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+    0
+  )
+  const templateFile = templates[slugHash % templates.length]
+  const templateBuffer = await readFile(path.join(imageDirectory, templateFile))
+
+  const imageMimeType = path.extname(templateFile).toLowerCase() === '.png'
+    ? 'image/png'
+    : path.extname(templateFile).toLowerCase() === '.webp'
+      ? 'image/webp'
+      : 'image/jpeg'
+  const templateBase64 = `data:${imageMimeType};base64,${templateBuffer.toString('base64')}`
   const fontData: ArrayBuffer = fontBuffer.buffer.slice(
     fontBuffer.byteOffset,
     fontBuffer.byteOffset + fontBuffer.byteLength
@@ -78,7 +102,7 @@ export default async function Image({ params }: { params: Params }) {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            padding: '60px 72px',
+            padding: '150px 72px 60px 72px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '28px' }}>
