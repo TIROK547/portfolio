@@ -1,4 +1,5 @@
-import { pageMetadata } from '@/lib/seo'
+import { notFound } from 'next/navigation'
+import { pageMetadata, listingPage, siteUrl, pageSchema, jsonLd } from '@/lib/seo'
 import Link from 'next/link'
 import PostCard from '@/components/PostCard'
 import BackLink from '@/components/BackLink'
@@ -7,9 +8,20 @@ import { listCategories, listPosts, listTags } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ lang: string }>; searchParams: SP }) {
   const { lang } = await params
-  return pageMetadata('Blog', lang, 'blog')
+  const sp = await searchParams
+  const page = listingPage(sp.page)
+  const filtered = !!(one(sp.q)?.trim() || many(sp.tag).length || many(sp.category).length)
+  const meta = pageMetadata('Blog', lang, 'blog')
+  const canonical = `${siteUrl(lang, 'blog')}${page > 1 ? `?page=${page}` : ''}`
+  return {
+    ...meta,
+    title: page > 1 ? `Blog — Page ${page}` : 'Blog',
+    alternates: { canonical },
+    openGraph: { ...meta.openGraph, url: canonical, title: page > 1 ? `Blog — Page ${page}` : 'Blog' },
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+  }
 }
 
 type SP = Promise<{ tag?: string | string[]; category?: string | string[]; q?: string; page?: string }>
@@ -29,17 +41,18 @@ export default async function BlogPage({
   const categories = many(sp.category)
   const q = one(sp.q)
 
-  const page = Math.max(1, Math.min(100000, Number.parseInt(one(sp.page) ?? '1', 10) || 1))
+  const page = listingPage(sp.page)
   const pageSize = 12
   const results = listPosts({ publishedOnly: true, tag: tags, category: categories, q, limit: pageSize + 1, offset: (page - 1) * pageSize })
   const posts = results.slice(0, pageSize)
+  if (page > 1 && posts.length === 0) notFound()
   const pageLink = (number: number) => {
     const next = new URLSearchParams()
     tags.forEach(t => next.append('tag', t))
     categories.forEach(c => next.append('category', c))
     if (q) next.set('q', q)
-    next.set('page', String(number))
-    return `/${lang}/blog?${next}`
+    if (number > 1) next.set('page', String(number))
+    return `/${lang}/blog${next.size ? `?${next}` : ''}`
   }
   const allCategories = listCategories()
   const allTags = listTags()
@@ -47,14 +60,11 @@ export default async function BlogPage({
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(pageSchema('CollectionPage', 'Articles & development notes', `${siteUrl(lang, 'blog')}${page > 1 ? `?page=${page}` : ''}`)) }} />
       <div className="max-w-6xl mx-auto">
         <BackLink fallback={`/${lang}`} className="inline-block mb-6" />
         <div className="mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-            <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">ls</span>{' '}
-            <span className="text-terminal-accent-cyan">-lt</span>{' '}
-            <span className="text-terminal-accent-blue">~/blog/</span>
-          </h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4"><span aria-hidden="true" className="text-terminal-accent-red">$ </span>Articles &amp; development notes</h1>
           <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-4" />
           <p className="text-sm text-terminal-text-light/60 dark:text-terminal-text-dark/60">
             showing {posts.length} {posts.length === 1 ? 'post' : 'posts'}

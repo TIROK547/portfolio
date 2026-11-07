@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "test:projects": "tsx scripts/test-projects.ts",
     "test:recovery": "tsx scripts/test-recovery.ts",
-    "postbuild": "node scripts/prepare-standalone.mjs"
+    "postbuild": "node scripts/prepare-standalone.mjs",
+    "test:seo": "tsx scripts/test-seo.ts"
   },
   "dependencies": {
     "adm-zip": "^0.6.1",

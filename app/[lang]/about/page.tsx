@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { pageMetadata } from '@/lib/seo'
+import { pageMetadata, pageSchema, jsonLd, siteUrl } from '@/lib/seo'
 import TechIcon from "@/components/TechIcon";
 import BackLink from "@/components/BackLink";
 import { getSettings } from "@/lib/db";
@@ -20,14 +20,13 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(pageSchema('ProfilePage', 'About', siteUrl(lang, 'about'))) }} />
       <div className="max-w-4xl mx-auto">
         <BackLink fallback={`/${lang}`} className="inline-block mb-6" />
         {/* Header */}
         <div className="mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">
-            <span className="text-terminal-accent-red">$</span>{" "}
-            <span className="text-terminal-accent-green">cat</span>{" "}
-            <span className="text-terminal-accent-blue">about_me.md</span>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+            <span aria-hidden="true" className="text-terminal-accent-red">$ </span>About {profile.name}
           </h1>
           <div className="h-px bg-terminal-text-light/20 dark:border-terminal-text-dark/20" />
         </div>

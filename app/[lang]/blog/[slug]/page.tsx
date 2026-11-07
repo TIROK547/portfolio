@@ -1,4 +1,4 @@
-import { SITE_URL, jsonLd } from '@/lib/seo'
+import { SITE_URL, jsonLd, postUrl, PERSON_ID, WEBSITE_ID, absoluteUrl, truncateDescription } from '@/lib/seo'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -25,20 +25,20 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { lang, slug } = await params
   const { profile } = getSettings()
   const post = getPostBySlug(decode(slug))
-  if (!post) return { title: 'Not found' }
-  const url = `${SITE_URL}/${lang}/blog/${slug}`
+  if (!post) notFound()
+  const url = postUrl(post.slug, lang)
   return {
     title: post.title,
-    description: post.excerpt,
+    description: truncateDescription(post.excerpt),
     alternates: {
       canonical: url,
       languages: {
-        en: `${SITE_URL}/en/blog/${slug}`,
+        en: postUrl(post.slug),
       },
     },
     openGraph: {
       title: post.title,
-      description: post.excerpt,
+      description: truncateDescription(post.excerpt),
       type: 'article',
       url,
       siteName: `${profile.name} (${profile.alias})`,
@@ -51,8 +51,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     twitter: {
       card: 'summary_large_image',
       title: post.title,
-      description: post.excerpt,
-      // twitter image is auto-picked from opengraph-image.tsx
+      description: truncateDescription(post.excerpt),
+      images: [`${url}/opengraph-image`],
     },
   }
 }
@@ -63,39 +63,44 @@ export default async function PostPage({ params }: { params: Params }) {
   const post = getPostBySlug(decode(slug))
   if (!post) notFound()
 
+  const url = postUrl(post.slug, lang)
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/${lang}` },
       { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_URL}/${lang}/blog` },
-      { '@type': 'ListItem', position: 3, name: post.title, item: `${SITE_URL}/${lang}/blog/${slug}` },
+      { '@type': 'ListItem', position: 3, name: post.title, item: url },
     ],
   }
 
   const blogPostingJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
+    '@id': `${url}#article`,
+    isPartOf: { '@id': WEBSITE_ID },
     headline: post.title,
-    description: post.excerpt,
-    url: `${SITE_URL}/${lang}/blog/${slug}`,
+    description: truncateDescription(post.excerpt),
+    url: url,
     datePublished: post.publishedAt ?? post.createdAt,
     dateModified: post.updatedAt,
     author: {
       '@type': 'Person',
+      '@id': PERSON_ID,
       name: profile.name,
-      url: SITE_URL,
+      url: `${SITE_URL}/en/about`,
     },
     publisher: {
       '@type': 'Person',
+      '@id': PERSON_ID,
       name: profile.name,
-      url: SITE_URL,
+      url: `${SITE_URL}/en/about`,
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${SITE_URL}/${lang}/blog/${slug}`,
+      '@id': url,
     },
-    image: post.coverImage ?? `${SITE_URL}/${lang}/blog/${slug}/opengraph-image`,
+    image: post.coverImage ? absoluteUrl(post.coverImage) : `${url}/opengraph-image`,
     ...(post.category ? { articleSection: post.category.name } : {}),
     ...(post.tags.length > 0 ? { keywords: post.tags.join(', ') } : {}),
     timeRequired: `PT${post.readingMinutes}M`,
@@ -120,7 +125,9 @@ export default async function PostPage({ params }: { params: Params }) {
             {post.title}
           </h1>
           <div className="text-xs sm:text-sm text-terminal-text-light/60 dark:text-terminal-text-dark/60 flex flex-wrap gap-x-4 gap-y-1">
-            <span>{formatDate(post.publishedAt)}</span>
+            <Link href={`/${lang}/about`} rel="author" className="text-terminal-accent-cyan">By {profile.name}</Link>
+            <time dateTime={post.publishedAt ?? post.createdAt}>Published {formatDate(post.publishedAt ?? post.createdAt)}</time>
+            {post.updatedAt.slice(0, 10) !== (post.publishedAt ?? post.createdAt).slice(0, 10) && <time dateTime={post.updatedAt}>Updated {formatDate(post.updatedAt)}</time>}
             <span>{post.readingMinutes} min read</span>
             {post.category && (
               <Link
@@ -149,7 +156,7 @@ export default async function PostPage({ params }: { params: Params }) {
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={post.coverImage ?? `/${lang}/blog/${slug}/opengraph-image`}
+          src={post.coverImage ?? `/${lang}/blog/${encodeURIComponent(post.slug)}/opengraph-image`}
           alt={`Cover image for "${post.title}"`}
           className="w-full max-h-[420px] object-cover mb-8 border border-terminal-text-light/20 dark:border-terminal-text-dark/20"
         />

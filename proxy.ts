@@ -31,6 +31,8 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next()
   }
 
+  if (pathname === '/robots.txt') return new NextResponse('User-agent: *\nDisallow: /\n', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+
   if (!EDITOR_PATHS.test(pathname)) return notFound()
 
   // Uploaded images are public (published posts embed them); API routes authenticate themselves.

@@ -1,4 +1,4 @@
-import { pageMetadata, SITE_URL, jsonLd } from '@/lib/seo'
+import { pageMetadata, siteUrl, pageSchema, jsonLd } from '@/lib/seo'
 import Hero from '@/components/Hero'
 import TechIcon from '@/components/TechIcon'
 import { makeExcerpt } from '@/lib/slug'
@@ -31,10 +31,6 @@ export default async function HomePage({
     : projects.slice(0, 4)
   const latestPosts = listPosts({ publishedOnly: true, limit: 3 })
   const { profile, contact, stack } = getSettings()
-  const websiteJsonLd = {
-    '@context': 'https://schema.org', '@type': 'WebSite',
-    name: `${profile.name} Portfolio`, url: SITE_URL,
-  }
   const age = ageFrom(profile.birthDate)
   const intro = bioParagraphs(profile.bio, age)[0] ?? ''
   const border =
@@ -47,7 +43,7 @@ export default async function HomePage({
     <div>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLd(websiteJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(pageSchema('WebPage', `${profile.name} Portfolio`, siteUrl(lang))) }}
       />
       <Hero
         info={{

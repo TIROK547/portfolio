@@ -1,3 +1,4 @@
+import { contentMetadata, siteUrl, absoluteUrl, PERSON_ID, WEBSITE_ID, jsonLd, breadcrumbSchema } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -17,22 +18,31 @@ function publishedProject(id: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, id } = await params
   const p = publishedProject(id)
-  return {
-    title: p.name,
-    description: p.summary || makeExcerpt(p.description),
-    alternates: { canonical: `/${lang}/projects/${id}` },
-    openGraph: {
-      title: p.name,
-      description: p.summary || makeExcerpt(p.description),
-      ...(p.images[0] ? { images: [p.images[0].url] } : {}),
-    },
-  }
+  return contentMetadata(p.name, p.summary || makeExcerpt(p.description), siteUrl(lang, 'projects', String(p.id)), p.images[0]?.url)
 }
 export default async function ProjectPage({ params }: Props) {
   const { lang, id } = await params
   const project = publishedProject(id)
+  const url = siteUrl(lang, 'projects', String(project.id))
+  const workId = `${url}#project`
+  const graph = {
+    '@context': 'https://schema.org', '@graph': [
+      { '@type': 'WebPage', '@id': `${url}#webpage`, url, name: project.name,
+        isPartOf: { '@id': WEBSITE_ID }, mainEntity: { '@id': workId } },
+      { '@type': project.github ? 'SoftwareSourceCode' : 'CreativeWork', '@id': workId,
+        name: project.name, url, description: project.summary || makeExcerpt(project.description),
+        contributor: { '@id': PERSON_ID }, keywords: project.stack,
+        ...(project.github ? { codeRepository: project.github } : {}),
+        ...(project.liveUrl ? { sameAs: project.liveUrl } : {}),
+        ...(project.images.length ? { image: project.images.map(image => absoluteUrl(image.url)) } : {}) },
+    ],
+  }
   return (
     <div className="min-h-screen px-4 py-10 sm:py-16">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(graph) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(breadcrumbSchema([
+        { name: 'Home', url: siteUrl(lang) }, { name: 'Projects', url: siteUrl(lang, 'projects') }, { name: project.name, url },
+      ])) }} />
       <article className="max-w-5xl mx-auto">
         <Link
           href={`/${lang}/projects`}

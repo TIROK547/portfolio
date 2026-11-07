@@ -3,8 +3,8 @@ import type { PostSummary } from '@/lib/db'
 import { formatDate } from '@/lib/format'
 
 export default function PostCard({ post, locale = 'en' }: { post: PostSummary; locale?: string }) {
-  const href = `/${locale}/blog/${post.slug}`
-  const coverSrc = post.coverImage ?? `/${locale}/blog/${post.slug}/opengraph-image`
+  const href = `/${locale}/blog/${encodeURIComponent(post.slug)}`
+  const coverSrc = post.coverImage ?? `/${locale}/blog/${encodeURIComponent(post.slug)}/opengraph-image`
   return (
     <article className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-amber dark:hover:border-terminal-accent-amber transition-colors group flex flex-col">
       <Link href={href} tabIndex={-1} aria-hidden>
@@ -18,7 +18,7 @@ export default function PostCard({ post, locale = 'en' }: { post: PostSummary; l
       </Link>
       <div className="p-4 flex flex-col gap-3 flex-1">
         <div className="text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60 flex flex-wrap gap-x-3">
-          <span>{formatDate(post.publishedAt)}</span>
+          <time dateTime={post.publishedAt ?? post.createdAt}>{formatDate(post.publishedAt ?? post.createdAt)}</time>
           <span>{post.readingMinutes} min read</span>
           {post.category && (
             <Link

@@ -53,6 +53,7 @@ export default function Footer({
               <Link className={linkStyle} href={`/${locale}/blog`}>
                 {fa ? 'نوشته‌ها' : 'blog'}
               </Link>
+              <a className={linkStyle} href="/feed.xml">RSS feed</a>
             </div>
           </nav>
           <div>
