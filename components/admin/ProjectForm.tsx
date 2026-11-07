@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useDraftRecovery } from '@/hooks/useDraftRecovery'
 import { useRouter } from 'next/navigation'
 import type { Project, ProjectImage } from '@/lib/db'
 import MarkdownEditor from './MarkdownEditor'
@@ -25,6 +26,10 @@ export default function ProjectForm({ initial }: { initial?: Project }) {
   const [error, setError] = useState('')
   const [stackText, setStackText] = useState((initial?.stack ?? []).join(', '))
   const [imageUrl, setImageUrl] = useState('')
+  const draft = useDraftRecovery(`project-draft:${initial?.id ?? 'new'}`, JSON.stringify({ form, stackText }), raw => {
+    const recovered = JSON.parse(raw)
+    setForm(recovered.form); setStackText(recovered.stackText)
+  })
   const update = <K extends keyof typeof form>(
     key: K,
     value: (typeof form)[K],
@@ -54,6 +59,7 @@ export default function ProjectForm({ initial }: { initial?: Project }) {
       )
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      draft.markSaved()
       router.replace('/projects')
       router.refresh()
     } catch (e) {
@@ -142,6 +148,7 @@ export default function ProjectForm({ initial }: { initial?: Project }) {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Delete failed.')
+      draft.markSaved()
       router.replace('/projects')
       router.refresh()
     } catch (e) {
@@ -415,6 +422,7 @@ export default function ProjectForm({ initial }: { initial?: Project }) {
           feature on home page (when published)
         </label>
       </fieldset>
+      {draft.notice && <p role="status" className="text-terminal-accent-yellow">{draft.notice}</p>}
       {error && (
         <p role="alert" className="text-terminal-accent-red text-sm">
           {error}

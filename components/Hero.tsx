@@ -18,7 +18,7 @@ export default function Hero({ info, stack, locale = 'en' }: HeroProps) {
   const fa = locale === 'fa'
   const border =
     'border-terminal-text-light/15 dark:border-terminal-text-dark/15'
-  const muted = 'text-terminal-text-light/50 dark:text-terminal-text-dark/50'
+  const muted = 'text-terminal-text-light/70 dark:text-terminal-text-dark/70'
   const palette = [
     'bg-terminal-accent-red',
     'bg-terminal-accent-orange',
@@ -51,7 +51,7 @@ export default function Hero({ info, stack, locale = 'en' }: HeroProps) {
 
         <div className={`border ${border}`}>
           <div
-            className={`flex items-center justify-between gap-4 border-b ${border} px-4 sm:px-6 py-3 text-[10px] sm:text-xs ${muted}`}
+            className={`flex items-center justify-between gap-4 border-b ${border} px-4 sm:px-6 py-3 text-xs sm:text-xs ${muted}`}
             dir="ltr"
           >
             <span>
@@ -67,7 +67,7 @@ export default function Hero({ info, stack, locale = 'en' }: HeroProps) {
               aria-hidden="true"
             >
               <div
-                className={`flex items-center justify-between gap-3 text-[10px] sm:text-xs ${muted}`}
+                className={`flex items-center justify-between gap-3 text-xs sm:text-xs ${muted}`}
               >
                 <span>./{info.alias}</span>
                 <span>developer profile</span>
@@ -84,7 +84,7 @@ export default function Hero({ info, stack, locale = 'en' }: HeroProps) {
                     />
                   ))}
                 </div>
-                <span className={`text-[10px] ${muted}`}>utf-8</span>
+                <span className={`text-xs ${muted}`}>utf-8</span>
               </div>
             </div>
 
@@ -182,7 +182,7 @@ export default function Hero({ info, stack, locale = 'en' }: HeroProps) {
           </div>
         </div>
         <div
-          className={`mt-5 flex flex-wrap justify-between gap-2 text-[10px] sm:text-xs ${muted}`}
+          className={`mt-5 flex flex-wrap justify-between gap-2 text-xs sm:text-xs ${muted}`}
         >
           <span>
             {fa ? 'ساختن، یادگرفتن، تکرار.' : 'Building. Learning. Iterating.'}

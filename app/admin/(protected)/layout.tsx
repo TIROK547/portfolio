@@ -12,11 +12,11 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     <>
       <header className="border-b border-terminal-text-dark/20">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between text-sm">
+        <div className="max-w-6xl mx-auto px-4 min-h-14 py-3 flex flex-wrap gap-4 items-center justify-between text-sm">
           <Link href="/" className="font-bold">
             <span className="text-terminal-accent-pink">$</span> admin
           </Link>
-          <nav className="flex items-center gap-5">
+          <nav aria-label="Editor navigation" className="flex flex-wrap items-center gap-x-5 gap-y-3">
             <Link href="/" className="hover:text-terminal-accent-cyan transition-colors">posts</Link>
             <Link href="/projects" className="hover:text-terminal-accent-cyan transition-colors">projects</Link>
             <Link href="/comments" className="hover:text-terminal-accent-cyan transition-colors">comments</Link>

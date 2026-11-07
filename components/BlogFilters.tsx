@@ -23,8 +23,9 @@ export default function BlogFilters({
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryString = searchParams.toString()
   const [q, setQ] = useState(initialQuery)
-  const firstRun = useRef(true)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const selectedCategories = new Set(searchParams.getAll('category'))
   const selectedTags = new Set(searchParams.getAll('tag'))
@@ -34,24 +35,36 @@ export default function BlogFilters({
     router.push(s ? `${base}?${s}` : base)
   }
 
-  // Debounced search: types into the box, URL updates ~350ms after the last keystroke.
+  function cancelPending() {
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = null
+  }
   useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false
-      return
-    }
-    const t = setTimeout(() => {
-      const next = new URLSearchParams(searchParams.toString())
-      if (q.trim()) next.set('q', q.trim())
+    cancelPending()
+    // URL navigation (including Back/Forward) is the source of truth.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQ(initialQuery)
+  }, [initialQuery, queryString])
+  useEffect(() => () => cancelPending(), [])
+
+  function search(value: string) {
+    setQ(value)
+    cancelPending()
+    timer.current = setTimeout(() => {
+      const next = new URLSearchParams(window.location.search)
+      next.delete('page')
+      if (value.trim()) next.set('q', value.trim())
       else next.delete('q')
-      navigate(next)
+      router.replace(`${base}${next.size ? `?${next}` : ''}`, { scroll: false })
     }, 350)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q])
+  }
 
   function toggle(key: 'category' | 'tag', value: string) {
+    cancelPending()
     const next = new URLSearchParams(searchParams.toString())
+    next.delete('page')
+    if (q.trim()) next.set('q', q.trim())
+    else next.delete('q')
     const current = next.getAll(key)
     next.delete(key)
     const set = new Set(current)
@@ -62,6 +75,7 @@ export default function BlogFilters({
   }
 
   function clearAll() {
+    cancelPending()
     setQ('')
     router.push(base)
   }
@@ -78,11 +92,12 @@ export default function BlogFilters({
   return (
     <div className="mb-8 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-terminal-accent-cyan min-w-[80px]">search:</span>
+        <label htmlFor="blog-search" className="text-sm text-terminal-accent-cyan min-w-[80px]">search:</label>
         <input
-          type="text"
+          id="blog-search"
+          type="search"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => search(e.target.value)}
           placeholder="grep posts…"
           className="flex-1 min-w-[10rem] max-w-xs bg-transparent border border-terminal-text-light/20 dark:border-terminal-text-dark/20 px-2 py-1 text-sm text-terminal-text-light dark:text-terminal-text-dark placeholder:text-terminal-text-light/30 dark:placeholder:text-terminal-text-dark/30 focus:outline-none focus:border-terminal-accent-cyan"
         />
@@ -97,7 +112,7 @@ export default function BlogFilters({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-terminal-accent-cyan min-w-[80px]">categories:</span>
           {categories.map((c) => (
-            <button key={c.value} onClick={() => toggle('category', c.value)} className={chip(selectedCategories.has(c.value))}>
+            <button aria-pressed={selectedCategories.has(c.value)} key={c.value} onClick={() => toggle('category', c.value)} className={chip(selectedCategories.has(c.value))}>
               {c.label} ({c.count})
             </button>
           ))}
@@ -108,7 +123,7 @@ export default function BlogFilters({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-terminal-accent-cyan min-w-[80px]">tags:</span>
           {tags.map((t) => (
-            <button key={t.value} onClick={() => toggle('tag', t.value)} className={chip(selectedTags.has(t.value))}>
+            <button aria-pressed={selectedTags.has(t.value)} key={t.value} onClick={() => toggle('tag', t.value)} className={chip(selectedTags.has(t.value))}>
               #{t.label}
             </button>
           ))}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useDraftRecovery } from '@/hooks/useDraftRecovery'
 import { useRouter } from 'next/navigation'
 import MarkdownEditor from './MarkdownEditor'
 import TerminalSelect from '@/components/TerminalSelect'
@@ -42,13 +43,11 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
   const [saved, setSaved] = useState(snapshot)
   const dirty = snapshot !== saved
 
-  // Warn before leaving with unsaved changes.
-  useEffect(() => {
-    if (!dirty) return
-    const h = (e: BeforeUnloadEvent) => e.preventDefault()
-    window.addEventListener('beforeunload', h)
-    return () => window.removeEventListener('beforeunload', h)
-  }, [dirty])
+  const draft = useDraftRecovery(`post-draft:${initial?.id ?? 'new'}`, snapshot, (raw) => {
+    const [t, sl, cat, tags, ex, cover, st, body] = JSON.parse(raw)
+    setTitle(t); setSlug(sl); setSlugTouched(true); setCategory(cat); setTagsText(tags)
+    setExcerpt(ex); setCoverImage(cover); setStatus(st); setContent(body)
+  })
 
   // Ctrl/Cmd+S saves. Re-bound each render so it always sees current state.
   useEffect(() => {
@@ -117,7 +116,9 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
       setSlug(post.slug)
       setTagsText(nextTags)
       setCategory(post.category?.name ?? '')
-      setSaved(JSON.stringify([title, post.slug, post.category?.name ?? '', nextTags, excerpt, coverImage, status, content]))
+      const savedSnapshot = JSON.stringify([title, post.slug, post.category?.name ?? '', nextTags, excerpt, coverImage, status, content])
+      setSaved(savedSnapshot)
+      draft.markSaved(savedSnapshot)
       setMessage({ kind: 'ok', text: `Saved at ${new Date().toLocaleTimeString()}` })
       if (!id) {
         setId(post.id)
@@ -137,6 +138,7 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
     setBusy(true)
     const res = await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' })
     if (res.ok) {
+      draft.markSaved()
       setSaved(snapshot) // don't trigger the unsaved-changes prompt
       router.replace('/')
       router.refresh()
@@ -205,6 +207,7 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
 
   return (
     <div>
+      {draft.notice && <p role="status" className="mb-4 text-sm text-terminal-accent-yellow">{draft.notice}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-xl font-bold">
           <span className="text-terminal-accent-red">$</span> {id ? 'edit' : 'new'} post
@@ -290,6 +293,7 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
           <input
             dir="auto"
             className="adm-input !text-lg !py-3 font-semibold"
+            aria-label="Title"
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}

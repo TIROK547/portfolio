@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState } from 'react'
 import type { ProjectImage } from '@/lib/db'
 
@@ -21,10 +22,11 @@ export default function ProjectGallery({
           rel="noopener noreferrer"
           aria-label="Open full-size image"
         >
-          <img
+          <Image
+            width={1200} height={800} sizes="(max-width: 1024px) 90vw, 1024px" unoptimized={!current.url.startsWith('/uploads/')}
             src={current.url}
             alt={current.alt || `${name} ${current.kind}`}
-            className={`w-full max-h-[560px] object-contain ${current.kind === 'logo' ? 'p-12 h-72' : ''}`}
+            className={`w-full h-auto max-h-[560px] object-contain ${current.kind === 'logo' ? 'p-12 h-72' : ''}`}
           />
         </a>
         <figcaption className="p-3 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-xs flex justify-between gap-4">
@@ -44,7 +46,8 @@ export default function ProjectGallery({
               aria-pressed={selected === index}
               className={`shrink-0 border p-1 ${selected === index ? 'border-terminal-accent-cyan/50' : 'border-transparent opacity-60'}`}
             >
-              <img
+              <Image
+                width={96} height={64} unoptimized={!img.url.startsWith('/uploads/')}
                 src={img.url}
                 alt=""
                 loading="lazy"

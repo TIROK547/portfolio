@@ -11,6 +11,7 @@
 }
 
 html {
+  scroll-padding-top: 5rem;
   color-scheme: dark; /* native controls (select popups, scrollbars) render dark */
 }
 
@@ -111,4 +112,10 @@ body {
   .adm-btn-danger {
     @apply border-terminal-accent-red/60 text-terminal-accent-red hover:border-terminal-accent-red hover:text-terminal-accent-red;
   }
+}
+
+/* Consistent keyboard focus across native controls and links. */
+:where(a, button, input, textarea, select, summary):focus-visible {
+  outline: 2px solid #83c092;
+  outline-offset: 3px;
 }

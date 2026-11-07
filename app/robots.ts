@@ -1,4 +1,7 @@
+import { SITE_URL } from '@/lib/seo'
 import type { MetadataRoute } from 'next'
+
+export const dynamic = 'force-dynamic'
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -9,7 +12,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/'],
       },
     ],
-    sitemap: 'https://portfolio.tirok.ir/sitemap.xml',
-    host: 'https://portfolio.tirok.ir',
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   }
 }

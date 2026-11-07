@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useDraftRecovery } from '@/hooks/useDraftRecovery'
 import { groupsToText, linesToList, textToGroups, type SiteSettings } from '@/lib/settings'
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
@@ -23,6 +24,11 @@ export default function SettingsForm({ initial }: { initial: SiteSettings }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+  const draft = useDraftRecovery('settings-draft', JSON.stringify({ profile, contact, stack, skills, interests, resumeUpdated }), raw => {
+    const v = JSON.parse(raw)
+    setProfile(v.profile); setContact(v.contact); setStack(v.stack); setSkills(v.skills)
+    setInterests(v.interests); setResumeUpdated(v.resumeUpdated)
+  })
 
   const setP = (k: keyof SiteSettings['profile']) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfile({ ...profile, [k]: e.target.value })
@@ -51,13 +57,14 @@ export default function SettingsForm({ initial }: { initial: SiteSettings }) {
       }),
     }).catch(() => null)
     const data = res ? await res.json().catch(() => ({})) : {}
-    if (res?.ok) setSaved(true)
+    if (res?.ok) { setSaved(true); draft.markSaved() }
     else setError(data.error ?? 'could not reach the server')
     setBusy(false)
   }
 
   return (
     <form onSubmit={submit} className="max-w-3xl space-y-6">
+      {draft.notice && <p role="status" className="text-terminal-accent-yellow">{draft.notice}</p>}
       <Section title="profile">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -105,7 +112,7 @@ export default function SettingsForm({ initial }: { initial: SiteSettings }) {
             <input id="s-gh" className="adm-input" value={contact.github} onChange={setC('github')} placeholder="tirok547" maxLength={60} />
           </div>
           <div>
-            <label className="adm-label" htmlFor="s-li">linkedin (full https URL, empty = &quot;coming soon&quot;)</label>
+            <label className="adm-label" htmlFor="s-li">linkedin (full https URL, empty = hidden)</label>
             <input id="s-li" className="adm-input" value={contact.linkedin} onChange={setC('linkedin')} placeholder="https://linkedin.com/in/…" maxLength={200} />
           </div>
           <div>

@@ -17,6 +17,9 @@ export async function requireAdminPage(): Promise<void> {
  * Mutating requests must also come from the same origin (CSRF defence on top of SameSite=Strict).
  */
 export async function guardApi(req: NextRequest): Promise<NextResponse | null> {
+  if (!(req.headers.get('host') ?? '').split(':')[0].toLowerCase().startsWith('admin.')) {
+    return new NextResponse('Not found', { status: 404 })
+  }
   if (!(await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value))) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }

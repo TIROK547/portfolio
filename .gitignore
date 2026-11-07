@@ -36,3 +36,8 @@ next-env.d.ts
 # blog database and uploaded images (runtime data)
 /data
 .env
+
+# local diagnostics
+*.log
+core*
+__pycache__/

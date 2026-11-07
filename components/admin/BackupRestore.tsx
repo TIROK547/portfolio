@@ -9,12 +9,6 @@ export default function BackupRestore() {
   >("idle");
   const [restoreMsg, setRestoreMsg] = useState("");
 
-  // ── Backup ───────────────────────────────────────────────────────────────
-  function handleBackup() {
-    // Just navigate to the endpoint; the browser triggers a file download
-    window.location.href = "/api/admin/backup";
-  }
-
   // ── Restore ──────────────────────────────────────────────────────────────
   async function handleRestore() {
     const file = fileRef.current?.files?.[0];
@@ -41,7 +35,9 @@ export default function BackupRestore() {
         method: "POST",
         body: form,
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({ error: res.status === 413
+        ? "Backup rejected: maximum ZIP size is 500 MB. Check the reverse proxy upload limit."
+        : `Restore failed (${res.status}). Please retry.` }));
 
       if (res.ok && json.ok) {
         setRestoreStatus("ok");
@@ -76,13 +72,13 @@ export default function BackupRestore() {
           Downloads a zip containing <code>site.db</code> and{" "}
           <code>uploads/</code>. Keep this file safe — it&apos;s everything.
         </p>
-        <button
-          onClick={handleBackup}
+        <a
+          href="/api/admin/backup" download
           className="font-mono text-xs px-4 py-2 border border-terminal-accent-green text-terminal-accent-green
                      hover:bg-terminal-accent-green/10 transition-colors rounded"
         >
           [↓ Download Backup]
-        </button>
+        </a>
       </div>
 
       <hr className="border-terminal-accent-cyan/10" />

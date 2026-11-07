@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import TechIcon from './TechIcon'
 import type { Project } from '@/lib/db'
@@ -21,7 +22,8 @@ export default function ProjectCard({
         className="block border-b border-terminal-text-light/20 dark:border-terminal-text-dark/20 bg-terminal-accent-cyan/5"
       >
         {cover ? (
-          <img
+          <Image
+            width={800} height={450} sizes="(max-width: 1024px) 90vw, 45vw" unoptimized={!cover.url.startsWith('/uploads/')}
             src={cover.url}
             alt={cover.alt || project.name}
             loading="lazy"

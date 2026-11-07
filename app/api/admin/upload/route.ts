@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
-import fs from 'node:fs/promises'
+import fs from 'node:fs'
 import path from 'node:path'
 import { guardApi } from '@/lib/auth'
 import { UPLOAD_DIR, getDb } from '@/lib/db'
@@ -37,6 +37,6 @@ export async function POST(req: NextRequest) {
 
   getDb() // ensures the upload directory exists
   const name = `${randomUUID()}.${ext}`
-  await fs.writeFile(path.join(UPLOAD_DIR, name), bytes)
+  fs.writeFileSync(path.join(UPLOAD_DIR, name), bytes)
   return NextResponse.json({ url: `/uploads/${name}` }, { status: 201 })
 }

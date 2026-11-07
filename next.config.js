@@ -3,6 +3,7 @@ const editorHost = [{ type: 'host', value: 'admin\\..*' }];
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  outputFileTracingExcludes: { '/*': ['./data/**/*', './*.log', './docs/**/*', './.env*'] },
   serverExternalPackages: ['better-sqlite3'],
   // admin.tirok.ir serves the editor from /admin/* without showing the prefix.
   // Access control for both hosts lives in proxy.ts.

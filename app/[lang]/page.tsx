@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import { pageMetadata, SITE_URL, jsonLd } from '@/lib/seo'
 import Hero from '@/components/Hero'
 import TechIcon from '@/components/TechIcon'
 import { makeExcerpt } from '@/lib/slug'
@@ -10,46 +10,9 @@ import { ageFrom, bioParagraphs } from '@/lib/settings'
 // Projects and posts live in SQLite, so render per request instead of at build time.
 export const dynamic = 'force-dynamic'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ lang: string }>
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
-  const isEn = lang === 'en'
-  return {
-    title: isEn
-      ? 'Alireza Ghotbi — Backend Developer'
-      : 'علیرضا قطبی — توسعه‌دهنده بک‌اند',
-    description: isEn
-      ? 'Backend developer specializing in Python (Django, FastAPI), Go, PostgreSQL, Redis, and Docker. Building scalable services from Tehran, Iran.'
-      : 'توسعه‌دهنده بک‌اند متخصص در Python، Django، FastAPI، Go، PostgreSQL، Redis و Docker.',
-    alternates: {
-      canonical: `https://portfolio.tirok.ir/${lang}`,
-      languages: {
-        en: 'https://portfolio.tirok.ir/en',
-        fa: 'https://portfolio.tirok.ir/fa',
-      },
-    },
-    openGraph: {
-      url: `https://portfolio.tirok.ir/${lang}`,
-    },
-  }
-}
-
-const websiteJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Alireza Ghotbi (TIROK) Portfolio',
-  url: 'https://portfolio.tirok.ir',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: 'https://portfolio.tirok.ir/en/blog?q={search_term_string}',
-    },
-    'query-input': 'required name=search_term_string',
-  },
+  return pageMetadata('', lang, '')
 }
 
 export default async function HomePage({
@@ -68,11 +31,15 @@ export default async function HomePage({
     : projects.slice(0, 4)
   const latestPosts = listPosts({ publishedOnly: true, limit: 3 })
   const { profile, contact, stack } = getSettings()
+  const websiteJsonLd = {
+    '@context': 'https://schema.org', '@type': 'WebSite',
+    name: `${profile.name} Portfolio`, url: SITE_URL,
+  }
   const age = ageFrom(profile.birthDate)
   const intro = bioParagraphs(profile.bio, age)[0] ?? ''
   const border =
     'border-terminal-text-light/15 dark:border-terminal-text-dark/15'
-  const muted = 'text-terminal-text-light/55 dark:text-terminal-text-dark/55'
+  const muted = 'text-terminal-text-light/70 dark:text-terminal-text-dark/70'
   const link =
     'inline-flex items-center gap-2 text-sm text-terminal-accent-cyan hover:text-terminal-accent-yellow transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-terminal-accent-cyan'
 
@@ -80,7 +47,7 @@ export default async function HomePage({
     <div>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(websiteJsonLd) }}
       />
       <Hero
         info={{
@@ -175,7 +142,7 @@ export default async function HomePage({
                           </Link>
                         </h3>
                         <span
-                          className={`text-[10px] whitespace-nowrap ${project.status === 'active' ? 'text-terminal-accent-green' : project.status === 'wip' ? 'text-terminal-accent-yellow' : muted}`}
+                          className={`text-xs whitespace-nowrap ${project.status === 'active' ? 'text-terminal-accent-green' : project.status === 'wip' ? 'text-terminal-accent-yellow' : muted}`}
                         >
                           <span aria-hidden="true">● </span>
                           {project.status === 'wip'

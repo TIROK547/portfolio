@@ -25,6 +25,8 @@ export async function proxy(req: NextRequest) {
 
   if (!host.startsWith('admin.')) {
     if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) return notFound()
+    // Persian is deferred until the complete public UI is translated.
+    if (pathname === '/fa' || pathname.startsWith('/fa/')) return redirect(req, pathname.replace(/^\/fa/, '/en') + req.nextUrl.search)
     if (pathname === '/') return redirect(req, '/en', 308)
     return NextResponse.next()
   }
@@ -40,5 +42,6 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|cur|pdf|zip)$).*)'],
+  // Restore authenticates in its route; bypass Proxy's 10 MB body cloning limit.
+  matcher: ['/((?!api/admin/restore(?:/|$)|_next/|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|cur|pdf|zip)$).*)'],
 }

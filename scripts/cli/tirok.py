@@ -353,7 +353,15 @@ def prompt_project_interactive(existing=None):
 # BACKUP / RESTORE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def resolve_data_dir():
+    global DATA_DIR, DB_PATH
+    config = subprocess.check_output(["docker", "compose", "-f", COMPOSE_FILE, "config", "--format", "json"], text=True)
+    volume = json.loads(config)["volumes"]["portfolio-data"]["name"]
+    DATA_DIR = subprocess.check_output(["docker", "volume", "inspect", volume, "--format", "{{.Mountpoint}}"], text=True).strip()
+    DB_PATH = os.path.join(DATA_DIR, "site.db")
+
 def cmd_backup():
+    resolve_data_dir()
     os.makedirs(BACKUP_DIR, exist_ok=True)
     stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     dest  = os.path.join(BACKUP_DIR, f"tirok_backup_{stamp}.zip")
@@ -365,7 +373,9 @@ def cmd_backup():
         db_src  = os.path.join(DATA_DIR, "site.db")
         upl_src = os.path.join(DATA_DIR, "uploads")
         if os.path.exists(db_src):
-            shutil.copy2(db_src, os.path.join(tmp, "site.db"))
+            with sqlite3.connect(f"file:{db_src}?mode=ro", uri=True) as source:
+                with sqlite3.connect(os.path.join(tmp, "site.db")) as target:
+                    source.backup(target)
         if os.path.exists(upl_src):
             shutil.copytree(upl_src, os.path.join(tmp, "uploads"))
         shutil.make_archive(dest[:-4], "zip", tmp)
@@ -385,6 +395,7 @@ def _prune_backups(keep=10):
         log(f"Pruned old backup: {old}")
 
 def cmd_restore(path=None):
+    resolve_data_dir()
     if not os.path.isdir(BACKUP_DIR) or not os.listdir(BACKUP_DIR):
         die(f"No backups found in {BACKUP_DIR}")
 
@@ -413,23 +424,11 @@ def cmd_restore(path=None):
     log("Stopping service…")
     compose("stop", check=False)
 
-    with tempfile.TemporaryDirectory() as tmp:
-        shutil.unpack_archive(path, tmp)
-        db_src  = os.path.join(tmp, "site.db")
-        upl_src = os.path.join(tmp, "uploads")
-        if not os.path.exists(db_src):
-            compose("start")
-            die("Invalid backup: site.db not found")
-        os.makedirs(DATA_DIR, exist_ok=True)
-        shutil.copy2(db_src, os.path.join(DATA_DIR, "site.db"))
-        if os.path.exists(upl_src):
-            dest_upl = os.path.join(DATA_DIR, "uploads")
-            if os.path.exists(dest_upl):
-                shutil.rmtree(dest_upl)
-            shutil.copytree(upl_src, dest_upl)
-
-    log("Restarting service…")
-    compose("start")
+    try:
+        subprocess.run([sys.executable, os.path.join(INSTALL_DIR, "scripts", "restore-data.py"), path, DATA_DIR], check=True)
+    finally:
+        log("Restarting service…")
+        compose("start")
     ok("Restore complete.")
 
 # ═══════════════════════════════════════════════════════════════════════════════

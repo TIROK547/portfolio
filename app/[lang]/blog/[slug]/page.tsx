@@ -1,10 +1,11 @@
+import { SITE_URL, jsonLd } from '@/lib/seo'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Markdown from '@/components/Markdown'
 import BackLink from '@/components/BackLink'
 import CommentSection from '@/components/CommentSection'
-import { getPostBySlug } from '@/lib/db'
+import { getPostBySlug, getSettings } from '@/lib/db'
 import { formatDate } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -22,17 +23,17 @@ const decode = (s: string) => {
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { lang, slug } = await params
+  const { profile } = getSettings()
   const post = getPostBySlug(decode(slug))
   if (!post) return { title: 'Not found' }
-  const url = `https://portfolio.tirok.ir/${lang}/blog/${slug}`
+  const url = `${SITE_URL}/${lang}/blog/${slug}`
   return {
     title: post.title,
     description: post.excerpt,
     alternates: {
       canonical: url,
       languages: {
-        en: `https://portfolio.tirok.ir/en/blog/${slug}`,
-        fa: `https://portfolio.tirok.ir/fa/blog/${slug}`,
+        en: `${SITE_URL}/en/blog/${slug}`,
       },
     },
     openGraph: {
@@ -40,10 +41,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       description: post.excerpt,
       type: 'article',
       url,
-      siteName: 'Alireza Ghotbi (TIROK)',
+      siteName: `${profile.name} (${profile.alias})`,
       publishedTime: post.publishedAt ?? undefined,
       modifiedTime: post.updatedAt,
-      authors: ['Alireza Ghotbi'],
+      authors: [profile.name],
       tags: post.tags,
       // og image is served by opengraph-image.tsx in this same directory
     },
@@ -58,6 +59,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function PostPage({ params }: { params: Params }) {
   const { lang, slug } = await params
+  const { profile } = getSettings()
   const post = getPostBySlug(decode(slug))
   if (!post) notFound()
 
@@ -65,9 +67,9 @@ export default async function PostPage({ params }: { params: Params }) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: `https://portfolio.tirok.ir/${lang}` },
-      { '@type': 'ListItem', position: 2, name: 'Blog', item: `https://portfolio.tirok.ir/${lang}/blog` },
-      { '@type': 'ListItem', position: 3, name: post.title, item: `https://portfolio.tirok.ir/${lang}/blog/${slug}` },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/${lang}` },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_URL}/${lang}/blog` },
+      { '@type': 'ListItem', position: 3, name: post.title, item: `${SITE_URL}/${lang}/blog/${slug}` },
     ],
   }
 
@@ -76,24 +78,24 @@ export default async function PostPage({ params }: { params: Params }) {
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
-    url: `https://portfolio.tirok.ir/${lang}/blog/${slug}`,
+    url: `${SITE_URL}/${lang}/blog/${slug}`,
     datePublished: post.publishedAt ?? post.createdAt,
     dateModified: post.updatedAt,
     author: {
       '@type': 'Person',
-      name: 'Alireza Ghotbi',
-      url: 'https://portfolio.tirok.ir',
+      name: profile.name,
+      url: SITE_URL,
     },
     publisher: {
       '@type': 'Person',
-      name: 'Alireza Ghotbi',
-      url: 'https://portfolio.tirok.ir',
+      name: profile.name,
+      url: SITE_URL,
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://portfolio.tirok.ir/${lang}/blog/${slug}`,
+      '@id': `${SITE_URL}/${lang}/blog/${slug}`,
     },
-    image: post.coverImage ?? `https://portfolio.tirok.ir/${lang}/blog/${slug}/opengraph-image`,
+    image: post.coverImage ?? `${SITE_URL}/${lang}/blog/${slug}/opengraph-image`,
     ...(post.category ? { articleSection: post.category.name } : {}),
     ...(post.tags.length > 0 ? { keywords: post.tags.join(', ') } : {}),
     timeRequired: `PT${post.readingMinutes}M`,
@@ -104,11 +106,11 @@ export default async function PostPage({ params }: { params: Params }) {
     <div className="min-h-screen py-8 sm:py-12 px-4">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogPostingJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(blogPostingJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(breadcrumbJsonLd) }}
       />
       <article className="max-w-3xl mx-auto">
         <BackLink fallback={`/${lang}/blog`} />

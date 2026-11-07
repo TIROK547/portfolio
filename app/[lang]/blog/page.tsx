@@ -1,3 +1,5 @@
+import { pageMetadata } from '@/lib/seo'
+import Link from 'next/link'
 import PostCard from '@/components/PostCard'
 import BackLink from '@/components/BackLink'
 import BlogFilters from '@/components/BlogFilters'
@@ -7,26 +9,10 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
-  return {
-    title: 'Blog',
-    description: 'Technical blog by Alireza Ghotbi — backend architecture, Go, Python, Django, server ops, and dev notes.',
-    alternates: {
-      canonical: `https://portfolio.tirok.ir/${lang}/blog`,
-      languages: {
-        en: 'https://portfolio.tirok.ir/en/blog',
-        fa: 'https://portfolio.tirok.ir/fa/blog',
-      },
-    },
-    openGraph: {
-      title: 'Blog — Alireza Ghotbi',
-      description: 'Technical blog on backend architecture, Go, Python, Django, and server ops.',
-      url: `https://portfolio.tirok.ir/${lang}/blog`,
-      type: 'website',
-    },
-  }
+  return pageMetadata('Blog', lang, 'blog')
 }
 
-type SP = Promise<{ tag?: string | string[]; category?: string | string[]; q?: string }>
+type SP = Promise<{ tag?: string | string[]; category?: string | string[]; q?: string; page?: string }>
 const many = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? [v] : [])
 const one = (v: string | string[] | undefined) => (typeof v === 'string' && v ? v : undefined)
 
@@ -43,7 +29,18 @@ export default async function BlogPage({
   const categories = many(sp.category)
   const q = one(sp.q)
 
-  const posts = listPosts({ publishedOnly: true, tag: tags, category: categories, q })
+  const page = Math.max(1, Math.min(100000, Number.parseInt(one(sp.page) ?? '1', 10) || 1))
+  const pageSize = 12
+  const results = listPosts({ publishedOnly: true, tag: tags, category: categories, q, limit: pageSize + 1, offset: (page - 1) * pageSize })
+  const posts = results.slice(0, pageSize)
+  const pageLink = (number: number) => {
+    const next = new URLSearchParams()
+    tags.forEach(t => next.append('tag', t))
+    categories.forEach(c => next.append('category', c))
+    if (q) next.set('q', q)
+    next.set('page', String(number))
+    return `/${lang}/blog?${next}`
+  }
   const allCategories = listCategories()
   const allTags = listTags()
   const base = `/${lang}/blog`
@@ -60,7 +57,7 @@ export default async function BlogPage({
           </h1>
           <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-4" />
           <p className="text-sm text-terminal-text-light/60 dark:text-terminal-text-dark/60">
-            total {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+            showing {posts.length} {posts.length === 1 ? 'post' : 'posts'}
             {categories.length > 0 && (
               <> · categories: <span className="text-terminal-accent-cyan">{categories.join(', ')}</span></>
             )}
@@ -80,7 +77,7 @@ export default async function BlogPage({
 
         {posts.length === 0 ? (
           <div className="border border-dashed border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-6 text-center text-terminal-text-light/60 dark:text-terminal-text-dark/60">
-            <span className="text-terminal-accent-cyan">[INFO]</span> nothing matches that.
+            <span className="text-terminal-accent-cyan">[INFO]</span> {q || tags.length || categories.length || page > 1 ? 'No posts match these filters.' : 'No posts yet. Notes and articles are coming soon.'}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -89,6 +86,11 @@ export default async function BlogPage({
             ))}
           </div>
         )}
+        <nav aria-label="Blog pages" className="mt-8 flex items-center justify-between gap-4 text-sm">
+          {page > 1 ? <Link href={pageLink(page - 1)} className="text-terminal-accent-cyan">← Newer posts</Link> : <span />}
+          <span>Page {page}</span>
+          {results.length > pageSize && <Link href={pageLink(page + 1)} className="text-terminal-accent-cyan">Older posts →</Link>}
+        </nav>
       </div>
     </div>
   )

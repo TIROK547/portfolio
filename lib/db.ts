@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { recoverRestore } from './storage-recovery'
 import fs from 'node:fs'
 import path from 'node:path'
 import { seedProjects } from './seed-projects'
@@ -123,46 +124,62 @@ CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id, created_at);
 
 const g = globalThis as unknown as { __db?: Database.Database }
 
-export function getDb(): Database.Database {
+export function getDb(recover = true): Database.Database {
   if (g.__db) return g.__db
+  if (recover) recoverRestore(DATA_DIR)
+  const firstInstall = !fs.existsSync(path.join(DATA_DIR, 'site.db'))
   fs.mkdirSync(UPLOAD_DIR, { recursive: true })
   const db = new Database(path.join(DATA_DIR, 'site.db'))
-  db.pragma('journal_mode = WAL')
-  db.pragma('foreign_keys = ON')
-  db.exec(SCHEMA)
+  try {
+    db.pragma('journal_mode = WAL')
+    db.pragma('foreign_keys = ON')
+    db.exec(SCHEMA)
 
-  // Rebuild once to expand SQLite's status CHECK while preserving IDs and content.
-  const columns = db.prepare('PRAGMA table_info(projects)').all() as { name: string }[]
-  if (!columns.some((c) => c.name === 'visibility')) {
-    db.transaction(() => {
-      db.exec(`CREATE TABLE projects_v2 (
-        id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL,
-        stack TEXT NOT NULL DEFAULT '[]', github TEXT NOT NULL DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','wip','archived','abandoned')),
-        sort_order INTEGER NOT NULL DEFAULT 0, featured INTEGER NOT NULL DEFAULT 0,
-        summary TEXT NOT NULL DEFAULT '', live_url TEXT NOT NULL DEFAULT '',
-        images TEXT NOT NULL DEFAULT '[]', visibility TEXT NOT NULL DEFAULT 'published' CHECK(visibility IN ('draft','published'))
-      );
-      INSERT INTO projects_v2 (id,name,description,stack,github,status,sort_order,featured)
-        SELECT id,name,description,stack,github,status,sort_order,featured FROM projects;
-      DROP TABLE projects;
-      ALTER TABLE projects_v2 RENAME TO projects;`)
-    })()
-  }
+    // Rebuild once to expand SQLite's status CHECK while preserving IDs and content.
+    const columns = db.prepare('PRAGMA table_info(projects)').all() as { name: string }[]
+    if (!columns.some((c) => c.name === 'visibility')) {
+      db.transaction(() => {
+        db.exec(`CREATE TABLE projects_v2 (
+          id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL,
+          stack TEXT NOT NULL DEFAULT '[]', github TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','wip','archived','abandoned')),
+          sort_order INTEGER NOT NULL DEFAULT 0, featured INTEGER NOT NULL DEFAULT 0,
+          summary TEXT NOT NULL DEFAULT '', live_url TEXT NOT NULL DEFAULT '',
+          images TEXT NOT NULL DEFAULT '[]', visibility TEXT NOT NULL DEFAULT 'published' CHECK(visibility IN ('draft','published'))
+        );
+        INSERT INTO projects_v2 (id,name,description,stack,github,status,sort_order,featured)
+          SELECT id,name,description,stack,github,status,sort_order,featured FROM projects;
+        DROP TABLE projects;
+        ALTER TABLE projects_v2 RENAME TO projects;`)
+      })()
+    }
 
-  const { n } = db.prepare('SELECT COUNT(*) AS n FROM projects').get() as { n: number }
-  if (n === 0) {
-    const ins = db.prepare(
-      'INSERT INTO projects (name, description, stack, github, status, sort_order, featured, summary, live_url, images, visibility) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-    )
-    db.transaction(() => {
-      seedProjects.forEach((p, i) =>
-        ins.run(p.name, p.description, JSON.stringify(p.stack), p.github, p.status, i, p.featured ? 1 : 0, p.summary, p.liveUrl, JSON.stringify(p.images), 'published'),
+    const { n } = db.prepare('SELECT COUNT(*) AS n FROM projects').get() as { n: number }
+    if (firstInstall && n === 0) {
+      const ins = db.prepare(
+        'INSERT INTO projects (name, description, stack, github, status, sort_order, featured, summary, live_url, images, visibility) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
       )
-    })()
+      db.transaction(() => {
+        seedProjects.forEach((p, i) =>
+          ins.run(p.name, p.description, JSON.stringify(p.stack), p.github, p.status, i, p.featured ? 1 : 0, p.summary, p.liveUrl, JSON.stringify(p.images), 'published'),
+        )
+      })()
+    }
+    g.__db = db
+    return db
+  } catch (error) {
+    db.close()
+    throw error
   }
-  g.__db = db
-  return db
+}
+
+/** All content uses one Node process. Restore closes it before a synchronous swap. */
+export function closeDb(): void {
+  if (g.__db) {
+    g.__db.pragma('wal_checkpoint(TRUNCATE)')
+    g.__db.close()
+    delete g.__db
+  }
 }
 
 /* ------------------------------------------------------------------ posts */
@@ -223,6 +240,7 @@ export function listPosts(opts: {
   category?: string | string[]
   q?: string
   limit?: number
+  offset?: number
 } = {}): PostSummary[] {
   const where: string[] = []
   const args: (string | number)[] = []
@@ -251,8 +269,8 @@ export function listPosts(opts: {
 
   const sql = `SELECT ${POST_COLS} ${POST_FROM}
     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-    ORDER BY COALESCE(p.published_at, p.updated_at) DESC, p.id DESC LIMIT ?`
-  const rows = getDb().prepare(sql).all(...args, opts.limit ?? 100) as PostRow[]
+    ORDER BY COALESCE(p.published_at, p.updated_at) DESC, p.id DESC LIMIT ? OFFSET ?`
+  const rows = getDb().prepare(sql).all(...args, opts.limit ?? 100, opts.offset ?? 0) as PostRow[]
   return hydrate(rows).map(({ content: _c, ...rest }) => rest)
 }
 

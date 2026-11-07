@@ -1,6 +1,7 @@
 export type Locale = 'en' | 'fa';
 
-export const locales: Locale[] = ['en', 'fa'];
+// Keep translations for future completion; only advertise the supported launch locale.
+export const locales: Locale[] = ['en'];
 
 export const defaultLocale: Locale = 'en';
 

@@ -78,7 +78,7 @@ export default function Header({ locale, alias }: HeaderProps) {
             {alias}
             <span className="text-terminal-accent-cyan">/</span>
           </span>
-          <span className="hidden text-[10px] font-normal tracking-widest text-terminal-text-light/40 dark:text-terminal-text-dark/40 lg:inline">
+          <span className="hidden text-xs font-normal tracking-widest text-terminal-text-light/70 dark:text-terminal-text-dark/70 lg:inline">
             PORTFOLIO
           </span>
         </Link>
@@ -121,7 +121,7 @@ export default function Header({ locale, alias }: HeaderProps) {
           >
             <p
               aria-hidden="true"
-              className="mb-2 px-2 text-[10px] tracking-widest text-terminal-text-light/40 dark:text-terminal-text-dark/40"
+              className="mb-2 px-2 text-xs tracking-widest text-terminal-text-light/70 dark:text-terminal-text-dark/70"
             >
               ~/portfolio — ls
             </p>

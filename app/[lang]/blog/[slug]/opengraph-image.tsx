@@ -79,7 +79,6 @@ export default async function Image({ params }: { params: Params }) {
           fontFamily: '"PressStart2P"',
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={templateBase64}
           alt=""

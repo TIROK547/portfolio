@@ -1,28 +1,13 @@
-import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo'
 import ProjectExplorer from '@/components/ProjectExplorer';
 import BackLink from '@/components/BackLink';
 import { listProjects } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
-  const { lang } = await params;
-  return {
-    title: 'Projects',
-    description: 'Open-source and personal projects by Alireza Ghotbi — backend services, Go tools, VPN infrastructure, music players, and more.',
-    alternates: {
-      canonical: `https://portfolio.tirok.ir/${lang}/projects`,
-      languages: {
-        en: 'https://portfolio.tirok.ir/en/projects',
-        fa: 'https://portfolio.tirok.ir/fa/projects',
-      },
-    },
-    openGraph: {
-      title: 'Projects — Alireza Ghotbi',
-      description: 'Open-source and personal projects by Alireza Ghotbi.',
-      url: `https://portfolio.tirok.ir/${lang}/projects`,
-    },
-  };
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params
+  return pageMetadata('Projects', lang, 'projects')
 }
 
 export default async function ProjectsPage({ params, searchParams }: { params: Promise<{ lang: string }>; searchParams: Promise<{ stack?: string }> }) {

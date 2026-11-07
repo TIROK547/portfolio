@@ -7,6 +7,17 @@ services:
       DATA_DIR: /data
     ports:
       - "127.0.0.1:${PORT:-3000}:${PORT:-3000}"   # nginx / cloudflared talks to this
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - portfolio-data:/data     # site.db + uploads/
 

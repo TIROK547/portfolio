@@ -101,11 +101,11 @@ ensure_node() {
   local major
   if command -v node >/dev/null 2>&1; then
     major=$(node -p "Number(process.versions.node.split('.')[0])" 2>/dev/null || echo 0)
-    if [[ "$major" -ge 18 ]]; then
+    if [[ "$major" -ge 22 ]]; then
       ok "Node.js $(node -v) is already installed."
       return
     fi
-    warn "Node.js $(node -v) is older than 18. Installing Node.js 22."
+    warn "Node.js $(node -v) is older than 22. Installing Node.js 22."
   else
     log "Installing Node.js 22…"
   fi
@@ -118,7 +118,7 @@ ensure_node() {
   apt_get install -y nodejs || die "Failed to install Node.js."
   hash -r
   major=$(node -p "Number(process.versions.node.split('.')[0])" 2>/dev/null || echo 0)
-  [[ "$major" -ge 18 ]] || die "Node.js 18+ is required."
+  [[ "$major" -ge 22 ]] || die "Node.js 22+ is required."
   ok "Node.js $(node -v) installed."
 }
 
@@ -197,7 +197,7 @@ if [[ -d "$INSTALL_DIR/.git" ]]; then
   git -C "$INSTALL_DIR" pull
 else
   log "Cloning repository into ${INSTALL_DIR}…"
-  git clone --branch dev https://github.com/TIROK547/portfolio.git "$INSTALL_DIR"
+  git clone --branch "${RELEASE_REF:-main}" https://github.com/TIROK547/portfolio.git "$INSTALL_DIR"
 fi
 cd "$INSTALL_DIR"
 
@@ -217,11 +217,11 @@ while true; do
   [[ "$ADMIN_PASS" == "$ADMIN_PASS2" ]] && break
   warn "Passwords don't match, try again."
 done
-[[ ${#ADMIN_PASS} -lt 8 ]] && die "Password must be at least 8 characters."
+[[ ${#ADMIN_PASS} -lt 12 ]] && die "Password must be at least 12 characters."
 
 log "Generating session secret and password hash…"
 HASH_OUTPUT=$(node scripts/hash-password.mjs "$ADMIN_PASS" 2>/dev/null) \
-  || die "Failed to run hash-password.mjs — ensure Node.js 18+ is installed."
+  || die "Failed to run hash-password.mjs — ensure Node.js 22+ is installed."
 
 SESSION_SECRET=$(echo "$HASH_OUTPUT" | grep 'SESSION_SECRET=' | cut -d= -f2-)
 ADMIN_PASSWORD_HASH=$(echo "$HASH_OUTPUT" | grep 'ADMIN_PASSWORD_HASH=' | cut -d= -f2-)
@@ -241,39 +241,29 @@ fi
 
 # ── 6. write .env ──────────────────────────────────────────────────────────────
 log "Writing .env…"
+umask 077
 cat > .env <<EOF
 SESSION_SECRET=${SESSION_SECRET}
 ADMIN_USER=${ADMIN_USER}
 ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
 DATA_DIR=/data
-NEXT_PUBLIC_SITE_URL=https://${PORTFOLIO_DOMAIN}
+SITE_URL=https://${PORTFOLIO_DOMAIN}
 EOF
 ok ".env written."
 
 # ── 7. restore data before first boot ─────────────────────────────────────────
 if [[ -n "$RESTORE_FILE" ]]; then
   log "Restoring backup before first boot…"
-  # Find the Docker volume mount path
-  VOLUME_NAME=$(basename "$INSTALL_DIR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')_portfolio-data
-  VOLUME_PATH="/var/lib/docker/volumes/${VOLUME_NAME}/_data"
-
-  # Create volume dir if it doesn't exist yet
-  mkdir -p "$VOLUME_PATH"
-
-  TMP_RESTORE=$(mktemp -d)
-  unzip -q "$RESTORE_FILE" -d "$TMP_RESTORE" || die "Failed to unzip backup."
-
-  if [[ ! -f "$TMP_RESTORE/site.db" ]]; then
-    rm -rf "$TMP_RESTORE"
-    die "Invalid backup: site.db not found inside zip."
+  VOLUME_NAME=$($COMPOSE config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["volumes"]["portfolio-data"]["name"])')
+  docker volume create "$VOLUME_NAME" >/dev/null
+  VOLUME_PATH=$(docker volume inspect "$VOLUME_NAME" --format '{{.Mountpoint}}')
+  $COMPOSE stop
+  if ! python3 scripts/restore-data.py "$RESTORE_FILE" "$VOLUME_PATH"; then
+    $COMPOSE start || true
+    die "Restore failed; existing data was retained."
   fi
+  ok "Validated backup restored with container ownership."
 
-  cp "$TMP_RESTORE/site.db" "$VOLUME_PATH/site.db"
-  if [[ -d "$TMP_RESTORE/uploads" ]]; then
-    cp -r "$TMP_RESTORE/uploads" "$VOLUME_PATH/uploads"
-  fi
-  rm -rf "$TMP_RESTORE"
-  ok "Backup restored to Docker volume."
 fi
 
 # ── 8. build & start container ────────────────────────────────────────────────
@@ -306,6 +296,15 @@ server {
     listen 80;
     server_name ${PORTFOLIO_DOMAIN} ${ADMIN_DOMAIN};
     client_max_body_size 10m;
+
+    location = /api/admin/restore {
+        client_max_body_size 501m;
+        proxy_pass http://portfolio_app;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-For \$remote_addr;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 300s;
+    }
 
     location / {
         proxy_pass         http://portfolio_app;

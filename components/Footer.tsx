@@ -15,14 +15,14 @@ export default function Footer({
   const { nav } = getTranslations(locale)
   const linkStyle =
     'w-fit py-1 transition-colors hover:text-terminal-accent-cyan focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-terminal-accent-cyan'
-  const muted = 'text-terminal-text-light/50 dark:text-terminal-text-dark/50'
+  const muted = 'text-terminal-text-light/70 dark:text-terminal-text-dark/70'
 
   return (
     <footer className="border-t border-terminal-text-light/15 dark:border-terminal-text-dark/15">
       <div className="mx-auto max-w-7xl px-4 pb-6 pt-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 pb-10 sm:grid-cols-[1.5fr_1fr_1fr] sm:gap-8">
           <div>
-            <p className={`mb-4 text-[10px] tracking-widest ${muted}`}>
+            <p className={`mb-4 text-xs tracking-widest ${muted}`}>
               <span className="text-terminal-accent-green">$</span> cat
               ./signature
             </p>
@@ -40,7 +40,7 @@ export default function Footer({
             </p>
           </div>
           <nav aria-label={fa ? 'پیوندهای پایین صفحه' : 'Footer navigation'}>
-            <h2 className={`mb-4 text-[10px] tracking-widest ${muted}`}>
+            <h2 className={`mb-4 text-xs tracking-widest ${muted}`}>
               {fa ? 'کاوش' : 'EXPLORE'}
             </h2>
             <div className="flex flex-col gap-2 text-xs">
@@ -56,7 +56,7 @@ export default function Footer({
             </div>
           </nav>
           <div>
-            <h2 className={`mb-4 text-[10px] tracking-widest ${muted}`}>
+            <h2 className={`mb-4 text-xs tracking-widest ${muted}`}>
               {fa ? 'ارتباط' : 'CONNECT'}
             </h2>
             <div className="flex flex-col gap-2 text-xs">
@@ -86,7 +86,7 @@ export default function Footer({
           </div>
         </div>
         <div
-          className={`flex flex-wrap items-center justify-between gap-4 border-t border-terminal-text-light/10 pt-5 text-[10px] dark:border-terminal-text-dark/10 sm:text-xs ${muted}`}
+          className={`flex flex-wrap items-center justify-between gap-4 border-t border-terminal-text-light/10 pt-5 text-xs dark:border-terminal-text-dark/10 sm:text-xs ${muted}`}
         >
           <p>
             © {new Date().getFullYear()} {profile.alias}{' '}
