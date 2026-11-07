@@ -1,0 +1,9 @@
+[Unit]
+Description=Portfolio SQLite snapshot and off-server backup
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/tirok-backup.env
+ExecStart=/bin/bash /opt/portfolio/scripts/scheduled-backup.sh

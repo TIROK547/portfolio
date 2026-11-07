@@ -1,50 +1,107 @@
-'use client';
+import Link from 'next/link'
+import { getTranslations, type Locale } from '@/lib/i18n'
+import type { SiteSettings } from '@/lib/settings'
 
-import { useEffect, useState } from 'react';
-
-export default function Footer() {
-  const [visitorCount, setVisitorCount] = useState<number>(547);
-
-  useEffect(() => {
-    // Get visitor count from localStorage
-    const storedCount = localStorage.getItem('visitorCount');
-
-    if (storedCount) {
-      setVisitorCount(parseInt(storedCount));
-    } else {
-      // First visit, set to 547
-      localStorage.setItem('visitorCount', '547');
-      setVisitorCount(547);
-    }
-
-    // Increment count on each visit
-    const incrementCount = () => {
-      const currentCount = parseInt(localStorage.getItem('visitorCount') || '547');
-      const newCount = currentCount + 1;
-      localStorage.setItem('visitorCount', newCount.toString());
-      setVisitorCount(newCount);
-    };
-
-    // Only increment once per session
-    const hasVisited = sessionStorage.getItem('hasVisited');
-    if (!hasVisited) {
-      incrementCount();
-      sessionStorage.setItem('hasVisited', 'true');
-    }
-  }, []);
+export default function Footer({
+  locale,
+  profile,
+  contact,
+}: {
+  locale: Locale
+  profile: SiteSettings['profile']
+  contact: SiteSettings['contact']
+}) {
+  const fa = locale === 'fa'
+  const { nav } = getTranslations(locale)
+  const linkStyle =
+    'w-fit py-1 transition-colors hover:text-terminal-accent-cyan focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-terminal-accent-cyan'
+  const muted = 'text-terminal-text-light/70 dark:text-terminal-text-dark/70'
 
   return (
-    <footer className="border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20 bg-terminal-bg-light dark:bg-terminal-bg-dark">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60 font-mono flex flex-wrap gap-3">
-          <span>
-            <span className="text-terminal-accent-red">$</span> system status: online | last updated: 2025
-          </span>
-          <span className="text-terminal-accent-cyan">
-            | visitors: <span className="text-terminal-accent-yellow">{visitorCount.toLocaleString()}</span>
-          </span>
+    <footer className="border-t border-terminal-text-light/15 dark:border-terminal-text-dark/15">
+      <div className="mx-auto max-w-7xl px-4 pb-6 pt-12 sm:px-6 lg:px-8">
+        <div className="grid gap-10 pb-10 sm:grid-cols-[1.5fr_1fr_1fr] sm:gap-8">
+          <div>
+            <p className={`mb-4 text-xs tracking-widest ${muted}`}>
+              <span className="text-terminal-accent-green">$</span> cat
+              ./signature
+            </p>
+            <Link
+              href={`/${locale}`}
+              className={`${linkStyle} text-lg font-semibold`}
+            >
+              {profile.alias}
+              <span className="text-terminal-accent-cyan">_</span>
+            </Link>
+            <p className={`mt-3 max-w-sm text-xs leading-6 ${muted}`}>
+              {profile.name}
+              <br />
+              {profile.role}
+            </p>
+          </div>
+          <nav aria-label={fa ? 'پیوندهای پایین صفحه' : 'Footer navigation'}>
+            <h2 className={`mb-4 text-xs tracking-widest ${muted}`}>
+              {fa ? 'کاوش' : 'EXPLORE'}
+            </h2>
+            <div className="flex flex-col gap-2 text-xs">
+              <Link className={linkStyle} href={`/${locale}/projects`}>
+                {nav.projects}
+              </Link>
+              <Link className={linkStyle} href={`/${locale}/about`}>
+                {nav.about}
+              </Link>
+              <Link className={linkStyle} href={`/${locale}/blog`}>
+                {fa ? 'نوشته‌ها' : 'blog'}
+              </Link>
+              <a className={linkStyle} href="/feed.xml">RSS feed</a>
+            </div>
+          </nav>
+          <div>
+            <h2 className={`mb-4 text-xs tracking-widest ${muted}`}>
+              {fa ? 'ارتباط' : 'CONNECT'}
+            </h2>
+            <div className="flex flex-col gap-2 text-xs">
+              <Link className={linkStyle} href={`/${locale}/contact`}>
+                {fa ? 'شروع گفتگو' : 'get in touch'}{' '}
+                <span aria-hidden="true">↗</span>
+              </Link>
+              {contact.github && (
+                <a
+                  className={linkStyle}
+                  href={`https://github.com/${contact.github}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GitHub <span aria-hidden="true">↗</span>
+                </a>
+              )}
+              {contact.email && (
+                <a
+                  className={`${linkStyle} break-all`}
+                  href={`mailto:${contact.email}`}
+                >
+                  {contact.email}
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+        <div
+          className={`flex flex-wrap items-center justify-between gap-4 border-t border-terminal-text-light/10 pt-5 text-xs dark:border-terminal-text-dark/10 sm:text-xs ${muted}`}
+        >
+          <p>
+            © {new Date().getFullYear()} {profile.alias}{' '}
+            <span aria-hidden="true" className="mx-2 opacity-40">
+              /
+            </span>{' '}
+            {fa ? 'ساخته‌شده با کنجکاوی' : 'built with curiosity'}
+          </p>
+          <a href="#main-content" className={linkStyle}>
+            {fa ? 'بازگشت به بالا' : 'back to top'}{' '}
+            <span aria-hidden="true">↑</span>
+          </a>
         </div>
       </div>
     </footer>
-  );
+  )
 }

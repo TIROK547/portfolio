@@ -1,259 +1,198 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import AsciiArt from "./AsciiArt";
-import type { StackGroup } from "@/lib/settings";
+import Link from 'next/link'
+import AsciiArt from './AsciiArt'
+import type { StackGroup } from '@/lib/settings'
 
 interface HeroProps {
   info: {
-    name: string;
-    alias: string;
-    role: string;
-    location: string;
-    age: number;
-  };
-  stack: StackGroup[];
-  locale?: string;
+    name: string
+    alias: string
+    role: string
+    location: string
+    age: number
+  }
+  stack: StackGroup[]
+  locale?: string
 }
 
-export default function Hero({ info, stack, locale = "en" }: HeroProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [typingComplete, setTypingComplete] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
-  // Subtle glow that follows the pointer. Kept as a ref-driven CSS var (not React state) so it
-  // updates every frame without triggering a re-render.
-  const glowRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setIsVisible(true);
-
-    const timer = setTimeout(() => {
-      setTypingComplete(true);
-    }, 3000);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    const glow = glowRef.current;
-    if (!section || !glow) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    function onMove(e: PointerEvent) {
-      const rect = section!.getBoundingClientRect();
-      glow!.style.setProperty("--gx", `${e.clientX - rect.left}px`);
-      glow!.style.setProperty("--gy", `${e.clientY - rect.top}px`);
-      glow!.style.opacity = "1";
-    }
-    function onLeave() {
-      glow!.style.opacity = "0";
-    }
-
-    section.addEventListener("pointermove", onMove);
-    section.addEventListener("pointerleave", onLeave);
-    return () => {
-      section.removeEventListener("pointermove", onMove);
-      section.removeEventListener("pointerleave", onLeave);
-    };
-  }, []);
-
-  const [first, ...rest] = info.name.toLowerCase().split(/\s+/);
-  const userHandle = rest.length
-    ? `${first}@${rest.join("")}`
-    : `${info.alias}@web`;
-  const textColor = "text-terminal-text-dark";
-
-  const systemInfo = [
-    { label: "user", value: userHandle, color: textColor, separator: true },
-    { label: "alias", value: info.alias, color: textColor },
-    { label: "role", value: info.role, color: textColor },
-    { label: "location", value: info.location, color: textColor },
-    { label: "age", value: `${info.age} years`, color: textColor },
-    { label: "shell", value: "/bin/zsh", color: textColor },
-  ];
-
-  // The first few groups of the stack list, shortened to fit the neofetch panel.
-  const stackInfo = stack
-    .slice(0, 3)
-    .map((g) => ({ category: g.category, items: g.items.slice(0, 4) }));
+export default function Hero({ info, stack, locale = 'en' }: HeroProps) {
+  const fa = locale === 'fa'
+  const border =
+    'border-terminal-text-light/15 dark:border-terminal-text-dark/15'
+  const muted = 'text-terminal-text-light/70 dark:text-terminal-text-dark/70'
+  const palette = [
+    'bg-terminal-accent-red',
+    'bg-terminal-accent-orange',
+    'bg-terminal-accent-yellow',
+    'bg-terminal-accent-green',
+    'bg-terminal-accent-cyan',
+    'bg-terminal-accent-blue',
+    'bg-terminal-accent-magenta',
+  ]
+  const groups = stack.slice(0, 3)
 
   return (
     <section
-      ref={sectionRef}
-      className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center py-8 sm:py-12 px-4 overflow-hidden"
+      aria-labelledby="hero-heading"
+      className="px-4 pt-10 pb-12 sm:pt-16 sm:pb-20 lg:pt-20"
     >
-      {/* Pointer-follow glow: pure decoration, ignores clicks/taps */}
-      <div
-        ref={glowRef}
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300"
-        style={{
-          background:
-            "radial-gradient(500px circle at var(--gx, 50%) var(--gy, 50%), rgba(127,187,179,0.10), transparent 0%)",
-        }}
-      />
-
-      <div
-        className={`relative w-full max-w-6xl p-8 rounded-3xl bg-gray-950/40 backdrop-blur-xl border border-white/20 transition-opacity duration-1000 ${
-          isVisible ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        {/* Terminal Header */}
-        <div className="mb-4 overflow-x-auto">
-          <div className="min-w-max">
-            <span className="text-terminal-accent-red text-xs sm:text-sm">
-              $
-            </span>
-            <span className="text-terminal-accent-green text-xs sm:text-sm ml-2">
-              neofetch
-            </span>
-            <span className="text-terminal-text-light dark:text-terminal-text-dark text-xs sm:text-sm">
-              {" "}
-              --config{" "}
-            </span>
-            <span className="text-terminal-accent-blue text-xs sm:text-sm">
-              ~/.config/neofetch/tirok.conf
-            </span>
-          </div>
+      <div className="max-w-6xl mx-auto">
+        <div
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm mb-6"
+          dir="ltr"
+        >
+          <span className="text-terminal-accent-green">
+            {info.alias}@portfolio
+          </span>
+          <span className={muted}>~</span>
+          <span className="text-terminal-accent-red">$</span>
+          <span>fastfetch</span>
+          <span className={muted}>--config ./profile.jsonc</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-6 sm:gap-8 lg:gap-12">
-          {/* ASCII Art */}
-          <div className="flex justify-center lg:justify-start">
-            <div className="bg-gradient-to-r from-terminal-accent-blue via-terminal-accent-purple to-terminal-accent-magenta bg-clip-text text-transparent">
-              <AsciiArt />
-            </div>
+        <div className={`border ${border}`}>
+          <div
+            className={`flex items-center justify-between gap-4 border-b ${border} px-4 sm:px-6 py-3 text-xs sm:text-xs ${muted}`}
+            dir="ltr"
+          >
+            <span>
+              <span className="text-terminal-accent-cyan">~/</span>portfolio
+            </span>
+            <span className="tracking-widest">PROFILE / 01</span>
           </div>
 
-          {/* System Info */}
-          <div className="space-y-2 text-xs sm:text-sm font-mono">
-            {systemInfo.map((info, index) => (
-              <div key={index}>
-                {info.separator && index > 0 && (
-                  <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 my-3" />
-                )}
-                <div
-                  className="flex flex-wrap gap-2 transition-all duration-500"
-                  style={{
-                    transitionDelay: `${index * 100}ms`,
-                    opacity: isVisible ? 1 : 0,
-                    transform: isVisible
-                      ? "translateX(0)"
-                      : "translateX(-20px)",
-                  }}
-                >
-                  <span className="text-terminal-accent-cyan font-semibold min-w-[100px]">
-                    {info.label}
-                  </span>
-                  <span className="text-terminal-accent-yellow">
-                    {info.value}
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            {/* Stack Section */}
-            <div className="pt-4">
-              <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-3" />
+          <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <div
+              className={`min-w-0 flex flex-col justify-between border-b lg:border-b-0 lg:border-r ${border} bg-terminal-accent-cyan/[0.025] px-4 sm:px-8 py-7 sm:py-10 lg:py-12`}
+              dir="ltr"
+              aria-hidden="true"
+            >
               <div
-                className="transition-all duration-500"
-                style={{
-                  transitionDelay: `${systemInfo.length * 100}ms`,
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? "translateX(0)" : "translateX(-20px)",
-                }}
+                className={`flex items-center justify-between gap-3 text-xs sm:text-xs ${muted}`}
               >
-                <div className="flex gap-2 mb-2">
-                  <span className="text-terminal-accent-cyan font-semibold min-w-[100px]">
-                    stack
-                  </span>
-                  <div className="flex-1 space-y-1">
-                    {stackInfo.map((stack, idx) => (
-                      <div key={idx} className="flex gap-2 flex-wrap">
-                        <span
-                          className={`text-xs ${
-                            idx === 0
-                              ? "text-terminal-accent-green"
-                              : idx === 1
-                                ? "text-terminal-accent-blue"
-                                : "text-terminal-accent-orange"
-                          }`}
-                        >
-                          [{stack.category}]
-                        </span>
-                        <span className="text-terminal-accent-yellow">
-                          {stack.items.join(" • ")}
-                        </span>
+                <span>./{info.alias}</span>
+                <span>developer profile</span>
+              </div>
+              <div className="flex justify-center py-5 sm:py-8 lg:py-12 overflow-hidden">
+                <AsciiArt />
+              </div>
+              <div className="flex items-center justify-between gap-5">
+                <div className="flex gap-1.5">
+                  {palette.map((color) => (
+                    <span
+                      key={color}
+                      className={`h-3 w-4 sm:h-4 sm:w-5 ${color} opacity-80`}
+                    />
+                  ))}
+                </div>
+                <span className={`text-xs ${muted}`}>utf-8</span>
+              </div>
+            </div>
+
+            <div className="min-w-0 px-5 py-8 sm:p-10 lg:p-12">
+              <p className="text-xs text-terminal-accent-cyan mb-3">
+                {fa ? 'سلام، من' : 'hello, I’m'}
+              </p>
+              <h1
+                id="hero-heading"
+                dir="auto"
+                className="text-3xl sm:text-4xl xl:text-5xl font-semibold tracking-tight leading-tight break-words"
+              >
+                {info.name}
+                <span className="text-terminal-accent-green" aria-hidden="true">
+                  .
+                </span>
+              </h1>
+              <p
+                dir="auto"
+                className="mt-4 text-sm sm:text-base leading-7 text-terminal-accent-yellow"
+              >
+                {info.role}
+              </p>
+
+              <dl
+                className={`grid grid-cols-[5rem_minmax(0,1fr)] gap-x-4 gap-y-2 mt-7 text-xs sm:text-sm leading-6`}
+              >
+                <dt className={muted}>{fa ? 'نام مستعار' : 'alias'}</dt>
+                <dd className="break-words">{info.alias}</dd>
+                <dt className={muted}>{fa ? 'موقعیت' : 'based in'}</dt>
+                <dd dir="auto" className="break-words">
+                  {info.location}
+                </dd>
+                <dt className={muted}>{fa ? 'سن' : 'age'}</dt>
+                <dd>
+                  {info.age} {fa ? 'سال' : 'years'}
+                </dd>
+              </dl>
+
+              {groups.length > 0 && (
+                <div className={`mt-7 pt-6 border-t ${border}`}>
+                  <dl className="space-y-3 text-xs leading-6" dir="ltr">
+                    {groups.map((group) => (
+                      <div
+                        key={group.category}
+                        className="grid grid-cols-[5rem_minmax(0,1fr)] gap-4"
+                      >
+                        <dt className="text-terminal-accent-blue break-words">
+                          {group.category}
+                        </dt>
+                        <dd className="text-terminal-text-light/75 dark:text-terminal-text-dark/75">
+                          {group.items.slice(0, 3).join(' / ')}
+                          {group.items.length > 3 && (
+                            <span className={muted}>
+                              {' '}
+                              / +{group.items.length - 3}
+                            </span>
+                          )}
+                        </dd>
                       </div>
                     ))}
-                  </div>
+                  </dl>
                 </div>
-              </div>
+              )}
             </div>
+          </div>
 
-            {/* Color Blocks */}
-            <div className="pt-4">
-              <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-3" />
-              <div className="flex gap-3">
-                {[
-                  { char: "●", color: "text-terminal-accent-blue" },
-                  { char: "●", color: "text-terminal-accent-magenta" },
-                  { char: "●", color: "text-terminal-accent-cyan" },
-                  { char: "●", color: "text-terminal-accent-green" },
-                  { char: "●", color: "text-terminal-accent-yellow" },
-                  { char: "●", color: "text-terminal-accent-orange" },
-                ].map((item, i) => (
-                  <span
-                    key={i}
-                    className={`${item.color} text-2xl transition-all duration-300`}
-                    style={{
-                      transitionDelay: `${(systemInfo.length + stackInfo.length + i) * 100}ms`,
-                      opacity: isVisible ? 1 : 0,
-                    }}
-                  >
-                    {item.char}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Blinking cursor */}
-            <div className="pt-3">
-              <span className="text-terminal-text-light dark:text-terminal-text-dark">
-                <span className="text-terminal-accent-red">$</span>{" "}
-                {typingComplete && <span className="animate-pulse">▋</span>}
-              </span>
+          <div
+            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-5 border-t ${border} px-5 sm:px-8 py-5`}
+          >
+            <p className={`text-xs ${muted}`} dir="ltr">
+              <span className="text-terminal-accent-red">$</span>{' '}
+              <span className="text-terminal-accent-green">./explore</span>
+              <span
+                aria-hidden="true"
+                className="ms-2 inline-block h-3 w-1.5 bg-terminal-accent-cyan motion-safe:animate-blink align-middle"
+              />
+            </p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 text-xs sm:text-sm">
+              <a
+                href="#work"
+                className="text-terminal-accent-cyan hover:text-terminal-accent-yellow transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-terminal-accent-cyan"
+              >
+                {fa ? 'مشاهده پروژه‌ها' : 'view selected work'}{' '}
+                <span aria-hidden="true">↓</span>
+              </a>
+              <Link
+                href={`/${locale}/contact`}
+                className="hover:text-terminal-accent-cyan transition-colors"
+              >
+                {fa ? 'شروع گفتگو' : 'get in touch'}{' '}
+                <span aria-hidden="true">↗</span>
+              </Link>
             </div>
           </div>
         </div>
-
-        {/* Quick nav: keeps the hero useful instead of just decorative */}
         <div
-          className="mt-6 flex flex-wrap items-center gap-x-1 gap-y-2 text-xs sm:text-sm font-mono transition-all duration-500"
-          style={{ transitionDelay: "900ms", opacity: isVisible ? 1 : 0 }}
+          className={`mt-5 flex flex-wrap justify-between gap-2 text-xs sm:text-xs ${muted}`}
         >
-          <span className="text-terminal-accent-red">$</span>
-          <span className="text-terminal-accent-green">./explore.sh</span>
-          {[
-            { flag: "--about", href: `/${locale}/about` },
-            { flag: "--projects", href: `/${locale}/projects` },
-            { flag: "--blog", href: `/${locale}/blog` },
-            { flag: "--contact", href: `/${locale}/contact` },
-          ].map((item) => (
-            <Link
-              key={item.flag}
-              href={item.href}
-              className="px-2 py-0.5 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-terminal-accent-yellow hover:border-terminal-accent-cyan hover:text-terminal-accent-cyan transition-colors"
-            >
-              {item.flag}
-            </Link>
-          ))}
+          <span>
+            {fa ? 'ساختن، یادگرفتن، تکرار.' : 'Building. Learning. Iterating.'}
+          </span>
+          <span aria-hidden="true">
+            {'// '}
+            {info.alias}
+          </span>
         </div>
       </div>
     </section>
-  );
+  )
 }

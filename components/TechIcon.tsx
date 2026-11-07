@@ -50,6 +50,8 @@ export default function TechIcon({ name, size = 16 }: TechIconProps) {
   const encodedIcon = `data:image/svg+xml,${icon}`;
 
   return (
+    // Inline data-URI SVGs already have fixed dimensions; no raster optimization needed.
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={encodedIcon}
       alt={name}

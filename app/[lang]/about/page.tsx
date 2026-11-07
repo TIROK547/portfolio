@@ -1,9 +1,16 @@
+import Image from 'next/image'
+import { pageMetadata, pageSchema, jsonLd, siteUrl } from '@/lib/seo'
 import TechIcon from "@/components/TechIcon";
 import BackLink from "@/components/BackLink";
 import { getSettings } from "@/lib/db";
 import { ageFrom, bioParagraphs } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params
+  return pageMetadata('About', lang, 'about')
+}
 
 export default async function AboutPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
@@ -13,14 +20,13 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(pageSchema('ProfilePage', 'About', siteUrl(lang, 'about'))) }} />
       <div className="max-w-4xl mx-auto">
         <BackLink fallback={`/${lang}`} className="inline-block mb-6" />
         {/* Header */}
         <div className="mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">
-            <span className="text-terminal-accent-red">$</span>{" "}
-            <span className="text-terminal-accent-green">cat</span>{" "}
-            <span className="text-terminal-accent-blue">about_me.md</span>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+            <span aria-hidden="true" className="text-terminal-accent-red">$ </span>About {profile.name}
           </h1>
           <div className="h-px bg-terminal-text-light/20 dark:border-terminal-text-dark/20" />
         </div>
@@ -29,10 +35,11 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
         <div className="mb-8 sm:mb-12 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 p-4 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="md:col-span-1">
-              <img
+              <Image
+                width={600} height={600} sizes="(max-width: 768px) 90vw, 280px"
                 src="/images/profile.jpg"
                 alt={profile.name}
-                className="w-full border-2 border-terminal-text-light dark:border-terminal-text-dark grayscale hover:grayscale-0 transition-all"
+                className="w-full h-auto border-2 border-terminal-text-light dark:border-terminal-text-dark grayscale hover:grayscale-0 transition-all"
               />
             </div>
             <div className="md:col-span-2 space-y-3 text-sm">

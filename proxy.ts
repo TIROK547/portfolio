@@ -19,15 +19,19 @@ const redirect = (req: NextRequest, to: string, status = 307) => {
   return NextResponse.redirect(new URL(to, `${proto}://${req.headers.get('host')}`), status)
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const host = (req.headers.get('host') ?? '').split(':')[0].toLowerCase()
   const { pathname } = req.nextUrl
 
   if (!host.startsWith('admin.')) {
     if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) return notFound()
+    // Persian is deferred until the complete public UI is translated.
+    if (pathname === '/fa' || pathname.startsWith('/fa/')) return redirect(req, pathname.replace(/^\/fa/, '/en') + req.nextUrl.search)
     if (pathname === '/') return redirect(req, '/en', 308)
     return NextResponse.next()
   }
+
+  if (pathname === '/robots.txt') return new NextResponse('User-agent: *\nDisallow: /\n', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
 
   if (!EDITOR_PATHS.test(pathname)) return notFound()
 
@@ -40,5 +44,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|cur|pdf|zip)$).*)'],
+  // Restore authenticates in its route; bypass Proxy's 10 MB body cloning limit.
+  matcher: ['/((?!api/admin/restore(?:/|$)|_next/|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|cur|pdf|zip)$).*)'],
 }

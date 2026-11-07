@@ -1,70 +1,42 @@
-import { NextRequest, NextResponse } from "next/server";
-import { guardApi } from "@/lib/auth";
-import { createReadStream, statSync, readdirSync } from "fs";
-import { join } from "path";
-import { createGzip } from "zlib";
-import { PassThrough } from "stream";
-import { ZipArchive } from "archiver";
+import { NextRequest, NextResponse } from 'next/server'
+import { guardApi } from '@/lib/auth'
+import { snapshotDatabase } from '@/lib/backup'
+import { UPLOAD_DIR } from '@/lib/db'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { Readable } from 'node:stream'
+import { ZipArchive } from 'archiver'
 
-const DATA_DIR = process.env.DATA_DIR ?? "./data";
+export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
-  // Auth check
-  const authError = await guardApi(req);
-  if (authError) return authError;
-
-  const dbPath = join(DATA_DIR, "site.db");
-  const uploadsPath = join(DATA_DIR, "uploads");
-
-  // Verify DB exists before we start streaming
+  const denied = await guardApi(req)
+  if (denied) return denied
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'portfolio-backup-'))
   try {
-    statSync(dbPath);
-  } catch {
-    return NextResponse.json({ error: "Database not found" }, { status: 500 });
+    const snapshot = path.join(temp, 'site.db')
+    snapshotDatabase(snapshot)
+    // Stage uploads too: a concurrent restore cannot change files under the stream.
+    const uploads = path.join(temp, 'uploads')
+    fs.cpSync(UPLOAD_DIR, uploads, { recursive: true })
+    const archive = new ZipArchive({ zlib: { level: 6 } })
+    const cleanup = () => fs.rmSync(temp, { recursive: true, force: true })
+    archive.once('close', cleanup)
+    archive.once('error', cleanup)
+    archive.file(snapshot, { name: 'site.db' })
+    archive.directory(uploads, 'uploads')
+    void archive.finalize().catch(error => archive.destroy(error))
+    return new NextResponse(Readable.toWeb(archive) as ReadableStream, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="portfolio-backup-${new Date().toISOString().slice(0, 10)}.zip"`,
+        'Cache-Control': 'no-store',
+      },
+    })
+  } catch (error) {
+    fs.rmSync(temp, { recursive: true, force: true })
+    console.error('[backup]', error)
+    return NextResponse.json({ error: 'Could not create backup' }, { status: 500 })
   }
-
-  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const filename = `portfolio-backup-${date}.zip`;
-
-  // Build the zip via a PassThrough stream so we can hand it to NextResponse
-  const pass = new PassThrough();
-  const archive = new ZipArchive({ zlib: { level: 6 } });
-
-  archive.on("error", (err) => {
-    console.error("[backup] archiver error:", err);
-    pass.destroy(err);
-  });
-
-  archive.pipe(pass);
-
-  // Add the SQLite database
-  archive.file(dbPath, { name: "site.db" });
-
-  // Add uploads directory (may not exist on a fresh install)
-  try {
-    readdirSync(uploadsPath);
-    archive.directory(uploadsPath, "uploads");
-  } catch {
-    // uploads/ doesn't exist yet — skip silently
-  }
-
-  archive.finalize();
-
-  // Convert Node stream → Web ReadableStream for Next.js
-  const webStream = new ReadableStream({
-    start(controller) {
-      pass.on("data", (chunk) => controller.enqueue(chunk));
-      pass.on("end", () => controller.close());
-      pass.on("error", (err) => controller.error(err));
-    },
-  });
-
-  return new NextResponse(webStream, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "no-store",
-    },
-  });
 }

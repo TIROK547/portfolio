@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { listPosts } from '@/lib/db'
 
-export default function PostsAdminPage() {
-  const posts = listPosts()
+export default async function PostsAdminPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const sp = await searchParams
+  const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1)
+  const results = listPosts({ limit: 51, offset: (page - 1) * 50 })
+  const posts = results.slice(0, 50)
   const siteUrl = process.env.SITE_URL ?? 'https://portfolio.tirok.ir'
 
   return (
@@ -40,6 +43,10 @@ export default function PostsAdminPage() {
           ))}
         </ul>
       )}
+      <nav aria-label="Post pages" className="mt-6 flex justify-between">
+        {page > 1 ? <Link href={`/?page=${page - 1}`}>← Newer</Link> : <span />}
+        {results.length > 50 && <Link href={`/?page=${page + 1}`}>Older →</Link>}
+      </nav>
     </>
   )
 }

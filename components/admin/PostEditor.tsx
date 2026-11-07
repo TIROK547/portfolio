@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useDraftRecovery } from '@/hooks/useDraftRecovery'
 import { useRouter } from 'next/navigation'
-import Markdown from '@/components/Markdown'
+import MarkdownEditor from './MarkdownEditor'
+import TerminalSelect from '@/components/TerminalSelect'
 import type { Post } from '@/lib/db'
 import { makeExcerpt } from '@/lib/slug'
 
@@ -11,11 +13,6 @@ interface Props {
   categories: string[]
   siteUrl: string
 }
-
-type View = 'write' | 'preview' | 'split'
-
-const toolBtn =
-  'px-2 py-1 text-xs border border-terminal-text-dark/20 hover:border-terminal-accent-cyan hover:text-terminal-accent-cyan transition-colors'
 
 export default function PostEditor({ initial, categories, siteUrl }: Props) {
   const router = useRouter()
@@ -32,26 +29,25 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
   const [coverImage, setCoverImage] = useState(initial?.coverImage ?? '')
   const [status, setStatus] = useState<'draft' | 'published'>(initial?.status ?? 'draft')
   const [content, setContent] = useState(initial?.content ?? '')
-  const [view, setView] = useState<View>('write')
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
 
-  const ta = useRef<HTMLTextAreaElement>(null)
-  const imageInput = useRef<HTMLInputElement>(null)
+  const [jsonOpen, setJsonOpen] = useState(false)
+  const [jsonText, setJsonText] = useState('')
+  const [jsonError, setJsonError] = useState<string | null>(null)
+
   const coverInput = useRef<HTMLInputElement>(null)
 
   const snapshot = JSON.stringify([title, slug, category, tagsText, excerpt, coverImage, status, content])
   const [saved, setSaved] = useState(snapshot)
   const dirty = snapshot !== saved
 
-  // Warn before leaving with unsaved changes.
-  useEffect(() => {
-    if (!dirty) return
-    const h = (e: BeforeUnloadEvent) => e.preventDefault()
-    window.addEventListener('beforeunload', h)
-    return () => window.removeEventListener('beforeunload', h)
-  }, [dirty])
+  const draft = useDraftRecovery(`post-draft:${initial?.id ?? 'new'}`, snapshot, (raw) => {
+    const [t, sl, cat, tags, ex, cover, st, body] = JSON.parse(raw)
+    setTitle(t); setSlug(sl); setSlugTouched(true); setCategory(cat); setTagsText(tags)
+    setExcerpt(ex); setCoverImage(cover); setStatus(st); setContent(body)
+  })
 
   // Ctrl/Cmd+S saves. Re-bound each render so it always sees current state.
   useEffect(() => {
@@ -66,51 +62,6 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
   })
 
   /* ---------------------------------------------------------- text editing */
-
-  // execCommand keeps the browser's undo stack intact; setRangeText is the fallback.
-  function replaceRange(start: number, end: number, text: string, selFrom?: number, selTo?: number) {
-    const el = ta.current
-    if (!el) return
-    el.focus()
-    el.setSelectionRange(start, end)
-    if (!document.execCommand('insertText', false, text)) {
-      el.setRangeText(text, start, end, 'end')
-      setContent(el.value)
-    }
-    const from = selFrom ?? start + text.length
-    el.setSelectionRange(from, selTo ?? from)
-  }
-
-  function wrap(before: string, after: string, placeholder: string) {
-    const el = ta.current
-    if (!el) return
-    const { selectionStart: s, selectionEnd: e, value } = el
-    const sel = value.slice(s, e) || placeholder
-    replaceRange(s, e, before + sel + after, s + before.length, s + before.length + sel.length)
-  }
-
-  function prefixLines(prefix: string, stripHeading = false) {
-    const el = ta.current
-    if (!el) return
-    const { selectionStart: s, selectionEnd: e, value } = el
-    const lineStart = value.lastIndexOf('\n', s - 1) + 1
-    const nl = value.indexOf('\n', e)
-    const lineEnd = nl === -1 ? value.length : nl
-    const block = value
-      .slice(lineStart, lineEnd)
-      .split('\n')
-      .map((l) => prefix + (stripHeading ? l.replace(/^#{1,6}\s+/, '') : l))
-      .join('\n')
-    replaceRange(lineStart, lineEnd, block)
-  }
-
-  function insertBlock(text: string) {
-    const el = ta.current
-    if (!el) return
-    const { selectionStart: s, selectionEnd: e, value } = el
-    const lead = s > 0 && value[s - 1] !== '\n' ? '\n\n' : s > 0 && value[s - 2] !== '\n' ? '\n' : ''
-    replaceRange(s, e, `${lead}${text}\n`)
-  }
 
   async function upload(file: File): Promise<string | null> {
     setUploading(true)
@@ -129,19 +80,6 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
       setUploading(false)
     }
   }
-
-  async function insertImages(files: File[]) {
-    for (const f of files) {
-      const url = await upload(f)
-      if (url) {
-        const alt = f.name.replace(/\.[^.]+$/, '').replace(/[[\]]/g, '') || 'image'
-        insertBlock(`![${alt}](${url})`)
-      }
-    }
-  }
-
-  const imagesFrom = (list: FileList | null | undefined) =>
-    Array.from(list ?? []).filter((f) => f.type.startsWith('image/'))
 
   /* ---------------------------------------------------------------- saving */
 
@@ -178,7 +116,9 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
       setSlug(post.slug)
       setTagsText(nextTags)
       setCategory(post.category?.name ?? '')
-      setSaved(JSON.stringify([title, post.slug, post.category?.name ?? '', nextTags, excerpt, coverImage, status, content]))
+      const savedSnapshot = JSON.stringify([title, post.slug, post.category?.name ?? '', nextTags, excerpt, coverImage, status, content])
+      setSaved(savedSnapshot)
+      draft.markSaved(savedSnapshot)
       setMessage({ kind: 'ok', text: `Saved at ${new Date().toLocaleTimeString()}` })
       if (!id) {
         setId(post.id)
@@ -198,6 +138,7 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
     setBusy(true)
     const res = await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' })
     if (res.ok) {
+      draft.markSaved()
       setSaved(snapshot) // don't trigger the unsaved-changes prompt
       router.replace('/')
       router.refresh()
@@ -207,13 +148,66 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
     }
   }
 
+  /* --------------------------------------------------------- JSON import */
+
+  function importFromJson() {
+    setJsonError(null)
+    let parsed: Record<string, unknown>
+    try {
+      parsed = JSON.parse(jsonText)
+    } catch {
+      setJsonError('Invalid JSON — could not parse.')
+      return
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      setJsonError('Expected a JSON object at the top level.')
+      return
+    }
+
+    const getString = (key: string) => (typeof parsed[key] === 'string' ? (parsed[key] as string).trim() : '')
+
+    const nextTitle = getString('title')
+    const nextCategory = getString('category')
+    const nextCoverImage = getString('image')
+    const nextContent = getString('body')
+
+    // tags: array of strings or a space/comma-separated string
+    let nextTagsText = tagsText
+    if (Array.isArray(parsed['tags'])) {
+      nextTagsText = (parsed['tags'] as unknown[])
+        .filter((t) => typeof t === 'string')
+        .map((t) => `#${(t as string).replace(/^#/, '')}`)
+        .join(' ')
+    } else if (typeof parsed['tags'] === 'string') {
+      nextTagsText = (parsed['tags'] as string)
+        .split(/[,\s]+/)
+        .filter(Boolean)
+        .map((t) => `#${t.replace(/^#/, '')}`)
+        .join(' ')
+    }
+
+    if (!nextTitle && !nextContent) {
+      setJsonError('JSON must include at least "title" or "body".')
+      return
+    }
+
+    if (nextTitle) setTitle(nextTitle)
+    if (nextCategory) setCategory(nextCategory)
+    if (nextCoverImage) setCoverImage(nextCoverImage)
+    if (nextContent) setContent(nextContent)
+    if (nextTagsText) setTagsText(nextTagsText)
+
+    setJsonText('')
+    setJsonOpen(false)
+    setJsonError(null)
+  }
+
   /* ------------------------------------------------------------------ view */
 
-  const writeHidden = view === 'preview'
-  const previewHidden = view === 'write'
 
   return (
     <div>
+      {draft.notice && <p role="status" className="mb-4 text-sm text-terminal-accent-yellow">{draft.notice}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-xl font-bold">
           <span className="text-terminal-accent-red">$</span> {id ? 'edit' : 'new'} post
@@ -238,103 +232,86 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
         </div>
       </div>
 
+      {/* JSON import panel */}
+      <div className="mb-6 border border-terminal-text-dark/20">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between px-4 py-2 text-xs text-terminal-text-dark/60 hover:text-terminal-accent-cyan transition-colors"
+          onClick={() => { setJsonOpen((o) => !o); setJsonError(null) }}
+        >
+          <span>
+            <span className="text-terminal-accent-cyan me-2">{'>'}</span>
+            import from json
+          </span>
+          <span className="font-mono">{jsonOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {jsonOpen && (
+          <div className="border-t border-terminal-text-dark/20 p-4 space-y-3">
+            <p className="text-xs text-terminal-text-dark/50">
+              Paste a post JSON — <code className="text-terminal-accent-cyan">title</code>,{' '}
+              <code className="text-terminal-accent-cyan">body</code>,{' '}
+              <code className="text-terminal-accent-cyan">category</code>,{' '}
+              <code className="text-terminal-accent-cyan">tags</code>,{' '}
+              <code className="text-terminal-accent-cyan">image</code> are recognised.
+              Existing fields will be overwritten.
+            </p>
+            <textarea
+              className="adm-input font-mono text-xs min-h-[10rem] resize-y"
+              placeholder={'{\n  "title": "My Post",\n  "category": "Backend",\n  "tags": ["go", "api"],\n  "image": "https://…",\n  "body": "# My Post\\n\\nContent here…"\n}'}
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+              spellCheck={false}
+            />
+            {jsonError && (
+              <p className="text-xs text-terminal-accent-red">{jsonError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="adm-btn adm-btn-primary"
+                onClick={importFromJson}
+                disabled={!jsonText.trim()}
+              >
+                import
+              </button>
+              <button
+                type="button"
+                className="adm-btn"
+                onClick={() => { setJsonOpen(false); setJsonText(''); setJsonError(null) }}
+              >
+                cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-6">
         {/* Main column */}
         <div className="min-w-0 space-y-4">
           <input
             dir="auto"
             className="adm-input !text-lg !py-3 font-semibold"
+            aria-label="Title"
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={200}
           />
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className={toolBtn} onClick={() => prefixLines('## ', true)} title="Heading">H2</button>
-            <button type="button" className={toolBtn} onClick={() => prefixLines('### ', true)} title="Subheading">H3</button>
-            <button type="button" className={`${toolBtn} font-bold`} onClick={() => wrap('**', '**', 'bold')} title="Bold">B</button>
-            <button type="button" className={`${toolBtn} italic`} onClick={() => wrap('*', '*', 'italic')} title="Italic">I</button>
-            <button type="button" className={toolBtn} onClick={() => wrap('`', '`', 'code')} title="Inline code">{'`c`'}</button>
-            <button type="button" className={toolBtn} onClick={() => wrap('\n```\n', '\n```\n', 'code')} title="Code block">{'```'}</button>
-            <button type="button" className={toolBtn} onClick={() => prefixLines('> ')} title="Quote">quote</button>
-            <button type="button" className={toolBtn} onClick={() => prefixLines('- ')} title="Bullet list">list</button>
-            <button type="button" className={toolBtn} onClick={() => prefixLines('1. ')} title="Numbered list">1.</button>
-            <button type="button" className={toolBtn} onClick={() => wrap('[', '](https://)', 'link text')} title="Link">link</button>
-            <button type="button" className={toolBtn} onClick={() => insertBlock('---')} title="Divider">—</button>
-            <button type="button" className={`${toolBtn} text-terminal-accent-green border-terminal-accent-green/40`}
-              onClick={() => imageInput.current?.click()} disabled={uploading}>
-              {uploading ? 'uploading…' : 'image'}
-            </button>
-            <input ref={imageInput} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden
-              onChange={(e) => {
-                void insertImages(imagesFrom(e.target.files))
-                e.target.value = ''
-              }} />
-
-            <div className="ms-auto flex gap-1 text-xs">
-              {(['write', 'preview', 'split'] as View[]).map((v) => (
-                <button key={v} type="button" onClick={() => setView(v)}
-                  className={`px-2 py-1 border ${v === 'split' ? 'hidden lg:block' : ''} ${
-                    view === v ? 'border-terminal-accent-cyan text-terminal-accent-cyan' : 'border-terminal-text-dark/20'
-                  }`}>
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={view === 'split' ? 'lg:grid lg:grid-cols-2 lg:gap-4' : ''}>
-            <textarea
-              ref={ta}
-              dir="auto"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onPaste={(e) => {
-                const imgs = imagesFrom(e.clipboardData.files)
-                if (imgs.length) {
-                  e.preventDefault()
-                  void insertImages(imgs)
-                }
-              }}
-              onDrop={(e) => {
-                const imgs = imagesFrom(e.dataTransfer.files)
-                if (imgs.length) {
-                  e.preventDefault()
-                  void insertImages(imgs)
-                }
-              }}
-              onDragOver={(e) => e.preventDefault()}
-              placeholder={'Write in Markdown. Paste or drop images straight in.\n\n## A header\nSome thoughts…'}
-              className={`adm-input font-mono leading-relaxed min-h-[28rem] h-[70vh] resize-y ${writeHidden ? 'hidden' : ''}`}
-              spellCheck
-            />
-            <div
-              className={`border border-terminal-text-dark/20 p-4 min-h-[28rem] max-h-[70vh] overflow-y-auto ${previewHidden ? 'hidden' : ''}`}
-            >
-              {content.trim() ? <Markdown>{content}</Markdown> : <p className="text-sm text-terminal-text-dark/40">Nothing to preview yet.</p>}
-            </div>
-          </div>
+          <MarkdownEditor value={content} onChange={setContent} />
         </div>
 
         {/* Sidebar */}
         <aside className="space-y-4">
-          <div>
-            <label className="adm-label" htmlFor="status">status</label>
-            <select id="status" className="adm-input" value={status} onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}>
-              <option value="draft">draft — only you</option>
-              <option value="published">published — on the portfolio</option>
-            </select>
-          </div>
+          <TerminalSelect admin label="status" value={status} disabled={busy}
+            onChange={(value) => setStatus(value as 'draft' | 'published')}
+            options={[{ value: 'draft', label: 'draft — only you' }, { value: 'published', label: 'published — on the portfolio' }]} />
 
-          <div>
-            <label className="adm-label" htmlFor="category">category</label>
-            <input id="category" className="adm-input" list="category-list" value={category}
-              onChange={(e) => setCategory(e.target.value)} maxLength={40} placeholder="e.g. life, backend" />
-            <datalist id="category-list">
-              {categories.map((c) => <option key={c} value={c} />)}
-            </datalist>
-          </div>
+          <TerminalSelect admin editable label="category" value={category} disabled={busy}
+            onChange={setCategory} maxLength={40} placeholder="e.g. life, backend"
+            options={categories.map((name) => ({ value: name, label: name }))} />
 
           <div>
             <label className="adm-label" htmlFor="tags">hashtags</label>

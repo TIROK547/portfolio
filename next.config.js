@@ -3,12 +3,12 @@ const editorHost = [{ type: 'host', value: 'admin\\..*' }];
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Metadata is local SQLite work: deliver it in <head> for non-JS crawlers too.
+  htmlLimitedBots: /.*/,
+  outputFileTracingExcludes: { '/*': ['./data/**/*', './*.log', './docs/**/*', './.env*'] },
   serverExternalPackages: ['better-sqlite3'],
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // admin.tirok.ir serves the editor from /admin/* without showing the prefix.
-  // Access control for both hosts lives in middleware.ts.
+  // Access control for both hosts lives in proxy.ts.
   async rewrites() {
     return {
       beforeFiles: [

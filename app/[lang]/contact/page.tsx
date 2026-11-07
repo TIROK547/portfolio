@@ -1,7 +1,13 @@
+import { pageMetadata, pageSchema, jsonLd, siteUrl } from '@/lib/seo'
 import BackLink from '@/components/BackLink';
 import { getSettings } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params
+  return pageMetadata('Contact', lang, 'contact')
+}
 
 export default async function ContactPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
@@ -11,17 +17,18 @@ export default async function ContactPage({ params }: { params: Promise<{ lang: 
     { label: 'email', value: c.email, href: `mailto:${c.email}`, icon: '📧' },
     ...(c.telegram ? [{ label: 'telegram', value: `@${c.telegram}`, href: `https://t.me/${c.telegram}`, icon: '✈' }] : []),
     ...(c.github ? [{ label: 'github', value: c.github, href: `https://github.com/${c.github}`, icon: '🔗' }] : []),
-    { label: 'linkedin', value: c.linkedin ? c.linkedin.replace(/^https:\/\/(www\.)?/, '') : 'Coming soon...', href: c.linkedin || '#', icon: '💼' },
+    ...(c.linkedin ? [{ label: 'linkedin', value: c.linkedin.replace(/^https:\/\/(www\.)?/, ''), href: c.linkedin, icon: '💼' }] : []),
   ];
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(pageSchema('ContactPage', 'Contact', siteUrl(lang, 'contact'))) }} />
       <div className="max-w-4xl mx-auto">
         <BackLink fallback={`/${lang}`} className="inline-block mb-6" />
         {/* Header */}
         <div className="mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-terminal-text-light dark:text-terminal-text-dark mb-4">
-            <span className="text-terminal-accent-red">$</span> <span className="text-terminal-accent-green">cat</span> <span className="text-terminal-accent-blue">contact.conf</span>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+            <span aria-hidden="true" className="text-terminal-accent-red">$ </span>Contact
           </h1>
           <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20" />
         </div>

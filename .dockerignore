@@ -6,3 +6,7 @@ node_modules
 data
 .env
 *.zip
+.env.*
+*.log
+core*
+docs

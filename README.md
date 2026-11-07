@@ -13,16 +13,17 @@ Live at [portfolio.tirok.ir](https://portfolio.tirok.ir) · Editor at [admin.tir
 - **Visitor counter** — session-based, starts at 547, stored in localStorage
 - **Resume download** — one-click PDF download from the About page
 - **i18n-ready routing** — pages live under `/[lang]/` (currently `en`)
+- **`tirok` CLI + TUI** — manage everything from the terminal: posts, projects, logs, backups, service control
 
 ## Tech Stack
 
-| Layer    | Tech                                         |
-|----------|----------------------------------------------|
+| Layer    | Tech                                          |
+|----------|-----------------------------------------------|
 | Frontend | Next.js 15 (App Router), React 18, TypeScript |
 | Styling  | Tailwind CSS, Everforest color scheme, JetBrains Mono |
 | Backend  | Next.js API routes, SQLite (`better-sqlite3`) |
 | Auth     | scrypt password hash, signed httpOnly cookie  |
-| Infra    | Docker, Nginx reverse proxy, VPS             |
+| Infra    | Docker, Nginx reverse proxy, VPS              |
 
 ## Project Structure
 
@@ -37,8 +38,10 @@ portfolio/
 │   ├── admin/          # Admin forms, lists, backup/restore UI
 │   └── ...             # Shared public-site and blog components
 ├── lib/                # Database, auth, validation, settings defaults
-├── scripts/            # Password utility, VPS installer
-├── docs/               # Extended documentation (see below)
+├── scripts/
+│   ├── cli/            # tirok CLI + TUI (tirok.py, tirok.1 man page)
+│   └── ...             # Password utility, VPS installer
+├── docs/               # Extended documentation
 ├── public/             # Static assets and downloadable resume
 ├── Dockerfile
 ├── docker-compose.yml
@@ -64,15 +67,47 @@ Editor: `http://admin.localhost:3000`
 
 ### Environment variables
 
-The minimum required set (see `.env.example` for all options):
+| Variable              | Description                                                       |
+|-----------------------|-------------------------------------------------------------------|
+| `SESSION_SECRET`      | Random secret for signing session cookies                         |
+| `ADMIN_USER`          | Admin username                                                    |
+| `ADMIN_PASSWORD_HASH` | scrypt hash — generate with `scripts/hash-password.mjs`          |
+| `DATA_DIR`            | Directory for `site.db` and `uploads/` (default: `./data`)       |
+| `INSECURE_COOKIES`    | Set to `1` for local http development                             |
 
-| Variable              | Description                              |
-|-----------------------|------------------------------------------|
-| `SESSION_SECRET`      | Random secret for signing session cookies |
-| `ADMIN_USER`          | Admin username                           |
-| `ADMIN_PASSWORD_HASH` | scrypt hash — generate with `scripts/hash-password.mjs` |
-| `DATA_DIR`            | Directory for `site.db` and `uploads/` (default: `./data`) |
-| `INSECURE_COOKIES`    | Set to `1` for local http development    |
+## tirok CLI
+
+The install script puts a `tirok` command on the server's `PATH`. It is the primary way to manage the site over SSH — no browser required. It talks directly to the SQLite database and wraps `docker compose` for service control.
+
+```bash
+tirok                        # open the interactive TUI
+tirok --help                 # full command reference
+man tirok                    # man page
+
+tirok post ls                # list all posts
+tirok post add               # write a new post (opens $EDITOR)
+tirok post add --json p.json # import from JSON (single object or array)
+tirok post edit <id|slug>    # edit an existing post
+tirok post rm  <id|slug>     # delete a post
+tirok post export            # dump all posts to JSON
+
+tirok project ls             # list all projects
+tirok project add            # add a project interactively
+tirok project add --json f   # import from JSON
+tirok project edit <id>      # edit a project
+tirok project rm  <id>       # delete a project
+
+tirok logs -f                # tail live logs
+tirok status                 # container + DB summary
+tirok start / stop / restart # service control
+
+tirok backup                 # snapshot to /var/backups/tirok/
+tirok restore                # pick a backup and restore
+tirok update                 # pull latest code and rebuild
+tirok uninstall              # remove everything
+```
+
+See [`docs/CLI.md`](docs/CLI.md) for the full reference, JSON schemas, and examples.
 
 ## Deployment
 
@@ -84,6 +119,7 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full VPS, Docker, and reverse
 
 | File | Contents |
 |------|----------|
+| [`docs/CLI.md`](docs/CLI.md) | `tirok` CLI + TUI reference, JSON schemas, examples |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | VPS install script, Docker Compose, Nginx config |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Host routing, blog/editor design, auth, comments, data model |
 | [`docs/CUSTOMIZATION.md`](docs/CUSTOMIZATION.md) | Color scheme, fonts, visitor counter, adding static content |
@@ -98,3 +134,13 @@ Feel free to use this as inspiration, but don't copy the content directly.
 - **Email**: dev@tirok.ir
 - **Telegram**: [@xyaes](https://t.me/xyaes)
 - **GitHub**: [TIROK547](https://github.com/TIROK547)
+
+### Rich projects
+
+The project editor supports a short summary, a full Markdown description using the same formatting toolbar, image insertion, and write/preview/split modes as posts, optional GitHub/live links, comma-separated stack input with shared technology icons, active/in-progress/archived/abandoned status, and separate draft/published visibility. Existing projects remain published after the automatic transactional SQLite migration; new projects default to drafts. Featured projects and ordering continue to control the homepage.
+
+Add up to 20 images by upload (PNG/JPEG/GIF/WebP, 8 MB each) or HTTPS URL. Set logo/screenshot type and alt text, and move images to choose the cover (first image). Public detail pages include a thumbnail gallery and Markdown documentation.
+
+When saving an empty description with a GitHub URL, the editor imports the public repository README through the [GitHub Contents API](https://docs.github.com/en/rest/repos/contents#get-a-repository-readme). Imported Markdown is stored locally with relative links/images resolved. Existing descriptions are never automatically refreshed; use **refresh from GitHub** to replace them explicitly. Import failures leave the form unsaved with an error so edits can be retried. Private repositories can use a manual description.
+
+Run `npm run dev -- --port 3002` for the public site at `http://localhost:3002/en/projects`. The editor is at `http://admin.localhost:3002/projects` and requires the normal admin environment setup described above. Run `npm run test:projects` for migration, visibility, validation, and README regression checks.
