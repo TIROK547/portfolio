@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>TIROK terminal monogram</title>
+  <rect width="64" height="64" rx="12" fill="#1e2326"/>
+  <path d="M12 16h32v8H32v24h-8V24H12z" fill="#a7c080"/>
+  <path d="M40 40h12v8H40z" fill="#83c092"/>
+</svg>
