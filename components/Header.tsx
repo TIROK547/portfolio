@@ -1,218 +1,134 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import type { Locale } from '@/lib/i18n';
-
-export interface HeaderInfo {
-  name: string;
-  alias: string;
-  role: string;
-  location: string;
-  age: number;
-  summary: string;
-}
+import { useRef } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { getTranslations, type Locale } from '@/lib/i18n'
 
 interface HeaderProps {
-  locale: Locale;
-  translations: any;
-  info: HeaderInfo;
+  locale: Locale
+  alias: string
 }
 
-export default function Header({ locale, translations, info }: HeaderProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isInfoCardOpen, setIsInfoCardOpen] = useState(false);
-  const pathname = usePathname();
-
-  const currentPath = pathname.replace(`/${locale}`, '');
-
-  // Blog has its own [BLOG] shortcut button next to [INFO], so it's left out of this list.
-  const navItems = [
-    { name: 'home', path: '' },
-    { name: 'about', path: '/about' },
-    { name: 'projects', path: '/projects' },
-    { name: 'contact', path: '/contact' },
-  ];
-
-  const isActive = (path: string) => {
-    const fullPath = `/${locale}${path}`;
-    return pathname === fullPath || (path !== '' && pathname.startsWith(`${fullPath}/`));
-  };
+export default function Header({ locale, alias }: HeaderProps) {
+  const pathname = usePathname()
+  const menu = useRef<HTMLDetailsElement>(null)
+  const fa = locale === 'fa'
+  const { nav } = getTranslations(locale)
+  const items = [
+    { label: nav.home, path: '' },
+    { label: nav.projects, path: '/projects' },
+    { label: nav.about, path: '/about' },
+    { label: fa ? 'نوشته‌ها' : 'blog', path: '/blog' },
+    { label: nav.contact, path: '/contact' },
+  ]
+  const focus =
+    'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-terminal-accent-cyan'
+  const links = (mobile = false) =>
+    items.map(({ label, path }, index) => {
+      const href = `/${locale}${path}`
+      const active =
+        pathname === href || (path !== '' && pathname.startsWith(`${href}/`))
+      return (
+        <Link
+          key={path}
+          href={href}
+          aria-current={active ? 'page' : undefined}
+          onClick={() => {
+            if (menu.current) menu.current.open = false
+          }}
+          className={`${focus} flex items-center gap-3 transition-colors hover:text-terminal-accent-cyan ${mobile ? 'px-2 py-3' : 'py-5'} ${active ? 'text-terminal-accent-cyan' : 'text-terminal-text-light/60 dark:text-terminal-text-dark/60'}`}
+        >
+          {mobile && (
+            <span aria-hidden="true" className="text-xs opacity-40">
+              0{index + 1}
+            </span>
+          )}
+          <span>{active ? `[${label}]` : label}</span>
+          {mobile && active && (
+            <span aria-hidden="true" className="ms-auto">
+              ←
+            </span>
+          )}
+        </Link>
+      )
+    })
 
   return (
-    <>
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-terminal-text-dark/20 dark:border-terminal-text-dark/20 bg-terminal-bg-light/95 dark:bg-terminal-bg-dark/95 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link
-              href={`/${locale}`}
-              className="text-lg font-bold text-terminal-text-light dark:text-terminal-text-dark hover:text-terminal-accent-cyan dark:hover:text-terminal-accent-cyan transition-colors"
-            >
-              <span className="text-terminal-accent-pink">$</span> tirok<span className="animate-pulse">_</span>
-            </Link>
-
-            {/* Desktop Controls */}
-            <div className="hidden md:flex items-center gap-4">
-
-              {/* Info Card Button */}
-              <button
-                onClick={() => setIsInfoCardOpen(true)}
-                className="px-3 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan dark:hover:border-terminal-accent-cyan transition-colors text-sm"
-              >
-                [INFO]
-              </button>
-
-              {/* Blog Shortcut */}
-              <Link
-                href={`/${locale}/blog`}
-                className={`px-3 py-1 border transition-colors text-sm ${
-                  isActive('/blog')
-                    ? 'border-terminal-accent-cyan text-terminal-accent-cyan'
-                    : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan dark:hover:border-terminal-accent-cyan'
-                }`}
-              >
-                [BLOG]
-              </Link>
-
-              {/* Hamburger Menu */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="px-3 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan dark:hover:border-terminal-accent-cyan transition-colors text-sm"
-                aria-label="Toggle menu"
-              >
-                [MENU]
-              </button>
-            </div>
-
-            {/* Mobile Controls */}
-            <div className="flex md:hidden items-center gap-2">
-
-              <button
-                onClick={() => setIsInfoCardOpen(true)}
-                className="px-2 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-xs"
-              >
-                [i]
-              </button>
-
-              <Link
-                href={`/${locale}/blog`}
-                className={`px-2 py-1 border text-xs ${
-                  isActive('/blog')
-                    ? 'border-terminal-accent-cyan text-terminal-accent-cyan'
-                    : 'border-terminal-text-light/20 dark:border-terminal-text-dark/20'
-                }`}
-              >
-                [blog]
-              </Link>
-
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="px-2 py-1 border border-terminal-text-light/20 dark:border-terminal-text-dark/20 text-xs"
-              >
-                [≡]
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation Menu */}
-        {isMenuOpen && (
-          <nav className="border-t border-terminal-text-dark/20 dark:border-terminal-text-dark/20 bg-terminal-bg-light dark:bg-terminal-bg-dark">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <ul className="space-y-2">
-                {navItems.map((item) => (
-                  <li key={item.path}>
-                    <Link
-                      href={`/${locale}${item.path}`}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`block py-2 px-4 transition-colors ${
-                        isActive(item.path)
-                          ? 'text-terminal-accent-cyan border-l-2 border-terminal-accent-cyan bg-terminal-accent-cyan/10'
-                          : 'text-terminal-text-light dark:text-terminal-text-dark hover:text-terminal-accent-cyan dark:hover:text-terminal-accent-cyan hover:border-l-2 hover:border-terminal-accent-cyan/50'
-                      }`}
-                    >
-                      <span className="text-terminal-accent-magenta">{'>'}</span> {item.name}
-                      {isActive(item.path) && ' [ACTIVE]'}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </nav>
-        )}
-      </header>
-
-      {/* Info Card Modal */}
-      {isInfoCardOpen && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setIsInfoCardOpen(false)}
+    <header
+      id="top"
+      className="fixed inset-x-0 top-0 z-50 border-b border-terminal-text-light/15 bg-terminal-bg-light/95 backdrop-blur-md dark:border-terminal-text-dark/15 dark:bg-terminal-bg-dark/95"
+    >
+      <a
+        href="#main-content"
+        className={`sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-10 focus:bg-terminal-bg-light focus:p-2 dark:focus:bg-terminal-bg-dark ${focus}`}
+      >
+        {fa ? 'رفتن به محتوا' : 'Skip to content'}
+      </a>
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+        <Link
+          href={`/${locale}`}
+          className={`${focus} flex min-w-0 items-baseline gap-2 text-sm font-semibold`}
+          aria-label={`${alias} — ${nav.home}`}
         >
-          <div
-            className="bg-terminal-bg-light dark:bg-terminal-bg-dark border-2 border-terminal-text-light dark:border-terminal-text-dark max-w-2xl w-full p-4 sm:p-6 relative terminal-window max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+          <span aria-hidden="true" className="text-terminal-accent-green">
+            ~
+          </span>
+          <span className="truncate">
+            {alias}
+            <span className="text-terminal-accent-cyan">/</span>
+          </span>
+          <span className="hidden text-[10px] font-normal tracking-widest text-terminal-text-light/40 dark:text-terminal-text-dark/40 lg:inline">
+            PORTFOLIO
+          </span>
+        </Link>
+        <nav
+          aria-label={fa ? 'ناوبری اصلی' : 'Main navigation'}
+          className="hidden items-center gap-6 text-xs md:flex"
+        >
+          {links()}
+        </nav>
+        <details
+          ref={menu}
+          className="group md:hidden"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && menu.current) {
+              menu.current.open = false
+              menu.current.querySelector('summary')?.focus()
+            }
+          }}
+        >
+          <summary
+            className={`${focus} flex min-h-11 cursor-pointer list-none items-center gap-3 text-xs [&::-webkit-details-marker]:hidden`}
           >
-            {/* Window Title Bar */}
-            <div className="absolute top-0 left-0 right-0 h-6 border-b border-terminal-text-light/20 dark:border-terminal-text-dark/20 flex items-center px-2 gap-2">
-              <span className="text-xs text-terminal-accent-pink">●</span>
-              <span className="text-xs text-terminal-accent-cyan">●</span>
-              <span className="text-xs text-terminal-accent-blue">●</span>
-              <span className="text-xs ml-2">user_info.sh</span>
-            </div>
-
-            <button
-              onClick={() => setIsInfoCardOpen(false)}
-              className="absolute top-1 right-2 text-terminal-accent-pink hover:text-terminal-accent-pink/70 text-xl"
+            <span>{fa ? 'فهرست' : 'menu'}</span>
+            <span
+              aria-hidden="true"
+              className="text-terminal-accent-cyan group-open:hidden"
             >
-              ×
-            </button>
-
-            <div className="mt-6 flex flex-col md:flex-row gap-4 md:gap-6">
-              {/* Profile Picture */}
-              <div className="flex-shrink-0 mx-auto md:mx-0">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 border-2 border-terminal-text-light dark:border-terminal-text-dark overflow-hidden">
-                  <img
-                    src="/images/profile.jpg"
-                    alt={info.name}
-                    className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                <div>
-                  <span className="text-terminal-accent-blue">const</span>{' '}
-                  <span className="text-terminal-text-dark">name</span> ={' '}
-                  <span className="text-terminal-accent-red">&quot;{info.name} ({info.alias})&quot;</span>;
-                </div>
-                <div>
-                  <span className="text-terminal-accent-blue">const</span>{' '}
-                  <span className="text-terminal-text-dark">role</span> ={' '}
-                  <span className="text-terminal-accent-red">&quot;{info.role}&quot;</span>;
-                </div>
-                <div>
-                  <span className="text-terminal-accent-blue">const</span>{' '}
-                  <span className="text-terminal-text-dark">age</span> ={' '}
-                  <span className="text-terminal-text-dark">{info.age}</span>;
-                </div>
-                <div>
-                  <span className="text-terminal-accent-blue">const</span>{' '}
-                  <span className="text-terminal-text-dark">location</span> ={' '}
-                  <span className="text-terminal-accent-red">&quot;{info.location}&quot;</span>;
-                </div>
-                <div className="pt-2 border-t border-terminal-text-light/20 dark:border-terminal-text-dark/20">
-                  <p className="text-terminal-text-light dark:text-terminal-text-dark/80 leading-relaxed">
-                    {info.summary}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
+              [+]
+            </span>
+            <span
+              aria-hidden="true"
+              className="hidden text-terminal-accent-cyan group-open:inline"
+            >
+              [−]
+            </span>
+          </summary>
+          <nav
+            aria-label={fa ? 'ناوبری موبایل' : 'Mobile navigation'}
+            className="absolute inset-x-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-terminal-text-light/15 bg-terminal-bg-light px-4 py-4 text-sm dark:border-terminal-text-dark/15 dark:bg-terminal-bg-dark"
+          >
+            <p
+              aria-hidden="true"
+              className="mb-2 px-2 text-[10px] tracking-widest text-terminal-text-light/40 dark:text-terminal-text-dark/40"
+            >
+              ~/portfolio — ls
+            </p>
+            {links(true)}
+          </nav>
+        </details>
+      </div>
+    </header>
+  )
 }
