@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import MarkdownEditor from './MarkdownEditor'
+import TerminalSelect from '@/components/TerminalSelect'
 import type { Post } from '@/lib/db'
 import { makeExcerpt } from '@/lib/slug'
 
@@ -300,22 +301,13 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
 
         {/* Sidebar */}
         <aside className="space-y-4">
-          <div>
-            <label className="adm-label" htmlFor="status">status</label>
-            <select id="status" className="adm-input" value={status} onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}>
-              <option value="draft">draft — only you</option>
-              <option value="published">published — on the portfolio</option>
-            </select>
-          </div>
+          <TerminalSelect admin label="status" value={status} disabled={busy}
+            onChange={(value) => setStatus(value as 'draft' | 'published')}
+            options={[{ value: 'draft', label: 'draft — only you' }, { value: 'published', label: 'published — on the portfolio' }]} />
 
-          <div>
-            <label className="adm-label" htmlFor="category">category</label>
-            <input id="category" className="adm-input" list="category-list" value={category}
-              onChange={(e) => setCategory(e.target.value)} maxLength={40} placeholder="e.g. life, backend" />
-            <datalist id="category-list">
-              {categories.map((c) => <option key={c} value={c} />)}
-            </datalist>
-          </div>
+          <TerminalSelect admin editable label="category" value={category} disabled={busy}
+            onChange={setCategory} maxLength={40} placeholder="e.g. life, backend"
+            options={categories.map((name) => ({ value: name, label: name }))} />
 
           <div>
             <label className="adm-label" htmlFor="tags">hashtags</label>

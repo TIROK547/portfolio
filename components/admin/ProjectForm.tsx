@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Project, ProjectImage } from '@/lib/db'
 import MarkdownEditor from './MarkdownEditor'
+import TerminalSelect from '@/components/TerminalSelect'
 
 export default function ProjectForm({ initial }: { initial?: Project }) {
   const router = useRouter()
@@ -319,19 +320,20 @@ export default function ProjectForm({ initial }: { initial?: Project }) {
                   placeholder="Describe the image for accessibility"
                 />
                 <div className="flex flex-wrap gap-2">
-                  <select
-                    aria-label={`Image ${i + 1} type`}
-                    className="adm-input !w-auto"
+                  <TerminalSelect
+                    admin
+                    hideLabel
+                    label={`Image ${i + 1} type`}
                     value={img.kind}
-                    onChange={(e) =>
-                      editImage(i, {
-                        kind: e.target.value as ProjectImage['kind'],
-                      })
+                    disabled={busy}
+                    onChange={(value) =>
+                      editImage(i, { kind: value as ProjectImage['kind'] })
                     }
-                  >
-                    <option value="screenshot">screenshot</option>
-                    <option value="logo">logo</option>
-                  </select>
+                    options={[
+                      { value: 'screenshot', label: 'screenshot' },
+                      { value: 'logo', label: 'logo' },
+                    ]}
+                  />
                   <button
                     type="button"
                     className="adm-btn"
@@ -368,34 +370,32 @@ export default function ProjectForm({ initial }: { initial?: Project }) {
           ))}
         </section>
         <div className="grid sm:grid-cols-3 gap-4">
-          <label className="adm-label">
-            status
-            <select
-              className="adm-input"
-              value={form.status}
-              onChange={(e) =>
-                update('status', e.target.value as Project['status'])
-              }
-            >
-              <option value="active">active</option>
-              <option value="wip">in progress</option>
-              <option value="archived">archived</option>
-              <option value="abandoned">abandoned</option>
-            </select>
-          </label>
-          <label className="adm-label">
-            visibility
-            <select
-              className="adm-input"
-              value={form.visibility}
-              onChange={(e) =>
-                update('visibility', e.target.value as Project['visibility'])
-              }
-            >
-              <option value="draft">draft</option>
-              <option value="published">published</option>
-            </select>
-          </label>
+          <TerminalSelect
+            admin
+            label="status"
+            value={form.status}
+            disabled={busy}
+            onChange={(value) => update('status', value as Project['status'])}
+            options={[
+              { value: 'active', label: 'active' },
+              { value: 'wip', label: 'in progress' },
+              { value: 'archived', label: 'archived' },
+              { value: 'abandoned', label: 'abandoned' },
+            ]}
+          />
+          <TerminalSelect
+            admin
+            label="visibility"
+            value={form.visibility}
+            disabled={busy}
+            onChange={(value) =>
+              update('visibility', value as Project['visibility'])
+            }
+            options={[
+              { value: 'draft', label: 'draft' },
+              { value: 'published', label: 'published' },
+            ]}
+          />
           <label className="adm-label">
             order (lower = first)
             <input

@@ -153,11 +153,11 @@ export function getDb(): Database.Database {
   const { n } = db.prepare('SELECT COUNT(*) AS n FROM projects').get() as { n: number }
   if (n === 0) {
     const ins = db.prepare(
-      'INSERT INTO projects (name, description, stack, github, status, sort_order, featured) VALUES (?,?,?,?,?,?,?)',
+      'INSERT INTO projects (name, description, stack, github, status, sort_order, featured, summary, live_url, images, visibility) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
     )
     db.transaction(() => {
       seedProjects.forEach((p, i) =>
-        ins.run(p.name, p.description, JSON.stringify(p.stack), p.github, p.status, i, p.featured ? 1 : 0),
+        ins.run(p.name, p.description, JSON.stringify(p.stack), p.github, p.status, i, p.featured ? 1 : 0, p.summary, p.liveUrl, JSON.stringify(p.images), 'published'),
       )
     })()
   }
