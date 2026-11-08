@@ -7,11 +7,11 @@ import TerminalSelect from './TerminalSelect'
 export default function ProjectExplorer({
   projects,
   locale,
-  initialStack = '',
+  initialStack = [],
 }: {
   projects: Project[]
   locale: string
-  initialStack?: string
+  initialStack?: string[]
 }) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
@@ -20,7 +20,7 @@ export default function ProjectExplorer({
   const filtered = projects.filter(
     (p) =>
       (!status || p.status === status) &&
-      (!stack || p.stack.includes(stack)) &&
+      (!stack.length || stack.some((technology) => p.stack.includes(technology))) &&
       `${p.name} ${p.summary} ${p.description} ${p.stack.join(' ')}`
         .toLowerCase()
         .includes(query.toLowerCase().trim()),
@@ -52,23 +52,26 @@ export default function ProjectExplorer({
             ]}
           />
           <TerminalSelect
-            label="technology"
+            label="technologies"
+            multiple
+            searchable
+            placeholder="Search technologies…"
             value={stack}
             onChange={setStack}
-            options={[{ value: '', label: 'all technologies' }, ...technologies.map((tech) => ({ value: tech, label: tech }))]}
+            options={technologies.map((tech) => ({ value: tech, label: tech }))}
           />
         </div>
         <div className="flex justify-between text-xs">
           <span aria-live="polite" className="opacity-60">
             {filtered.length} / {projects.length} projects
           </span>
-          {(query || status || stack) && (
+          {(query || status || stack.length > 0) && (
             <button
               className="text-terminal-accent-cyan"
               onClick={() => {
                 setQuery('')
                 setStatus('')
-                setStack('')
+                setStack([])
               }}
             >
               clear filters ×

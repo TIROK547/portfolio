@@ -6,6 +6,7 @@ type Option = { value: string; label: string }
 
 export default function TerminalSelect({
   label,
+  multiple,
   value,
   options: allOptions,
   onChange,
@@ -13,6 +14,7 @@ export default function TerminalSelect({
   admin = false,
   hideLabel = false,
   editable = false,
+  searchable = false,
   placeholder,
   maxLength,
 }: {
@@ -20,27 +22,34 @@ export default function TerminalSelect({
   admin?: boolean
   hideLabel?: boolean
   editable?: boolean
+  searchable?: boolean
   placeholder?: string
   maxLength?: number
   label: string
-  value: string
   options: Option[]
-  onChange: (value: string) => void
-}) {
+} & (
+  | { multiple?: false; value: string; onChange: (value: string) => void }
+  | { multiple: true; value: string[]; onChange: (value: string[]) => void }
+)) {
   const id = useId()
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement | HTMLInputElement>(null)
   const list = useRef<HTMLUListElement>(null)
   const search = useRef({ text: '', time: 0 })
   const [isOpen, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const inputMode = editable || searchable || multiple
+  const singleValue = typeof value === 'string' ? value : ''
+  const isSelected = (candidate: string) => multiple ? value.includes(candidate) : candidate === value
   const open = isOpen && !disabled
-  const options = editable
+  const filter = editable ? singleValue : (searchable || multiple) && open ? query.trim() : ''
+  const options = inputMode
     ? allOptions.filter((option) =>
-        option.label.toLowerCase().includes(value.toLowerCase()),
+        option.label.toLowerCase().includes(filter.toLowerCase()),
       )
     : allOptions
   const [active, setActive] = useState(0)
-  const selected = options.findIndex((option) => option.value === value)
+  const selected = options.findIndex((option) => isSelected(option.value))
 
   useEffect(() => {
     if (!open) return
@@ -58,6 +67,7 @@ export default function TerminalSelect({
 
   function show(index = Math.max(0, selected)) {
     if (disabled) return
+    setQuery('')
     setActive(index)
     search.current = { text: '', time: 0 }
     setOpen(true)
@@ -66,8 +76,13 @@ export default function TerminalSelect({
   function choose(index: number) {
     if (disabled || trigger.current?.matches(':disabled') || !options[index])
       return
-    onChange(options[index].value)
-    setOpen(false)
+    const chosen = options[index].value
+    if (multiple) {
+      onChange(value.includes(chosen) ? value.filter((item) => item !== chosen) : [...value, chosen])
+    } else {
+      onChange(chosen)
+      setOpen(false)
+    }
     trigger.current?.focus()
   }
 
@@ -90,13 +105,13 @@ export default function TerminalSelect({
         return
       case 'Home':
       case 'End':
-        if (editable || !options.length) return
+        if (inputMode || !options.length) return
         event.preventDefault()
         show(event.key === 'Home' ? 0 : last)
         return
       case 'Enter':
       case ' ':
-        if (editable && (event.key === ' ' || !open)) return
+        if (inputMode && (event.key === ' ' || !open)) return
         event.preventDefault()
         if (open) choose(active)
         else show()
@@ -113,7 +128,7 @@ export default function TerminalSelect({
         return
     }
     if (
-      !editable &&
+      !inputMode &&
       event.key.length === 1 &&
       !event.ctrlKey &&
       !event.metaKey &&
@@ -159,7 +174,7 @@ export default function TerminalSelect({
       >
         {label}
       </span>
-      {editable ? (
+      {inputMode ? (
         <input
           ref={(element) => {
             trigger.current = element
@@ -173,10 +188,10 @@ export default function TerminalSelect({
           aria-activedescendant={
             open && options[active] ? `${id}-option-${active}` : undefined
           }
-          className="adm-input"
-          value={value}
+          className={admin ? 'adm-input' : 'w-full bg-transparent border border-terminal-text-light/20 dark:border-terminal-text-dark/20 px-3 py-2 text-sm focus:outline-none focus:border-terminal-accent-cyan disabled:opacity-40'}
+          value={multiple ? (open ? query : '') : editable ? singleValue : open ? query : allOptions.find((option) => option.value === singleValue)?.label ?? singleValue}
           disabled={disabled}
-          placeholder={placeholder}
+          placeholder={placeholder ?? `Search ${label}…`}
           maxLength={maxLength}
           autoComplete="off"
           onFocus={() => show()}
@@ -184,7 +199,8 @@ export default function TerminalSelect({
             if (!open) show()
           }}
           onChange={(event) => {
-            onChange(event.target.value)
+            if (editable && !multiple) onChange(event.target.value)
+            else setQuery(event.target.value)
             setActive(0)
             setOpen(true)
           }}
@@ -216,19 +232,36 @@ export default function TerminalSelect({
           </span>
         </button>
       )}
+      {multiple && value.length > 0 && (
+        <div className="flex flex-wrap gap-1" aria-label={`Selected ${label}`}>
+          {value.map((item) => (
+            <button
+              key={item}
+              type="button"
+              disabled={disabled}
+              aria-label={`Remove ${item}`}
+              onClick={() => onChange(value.filter((selected) => selected !== item))}
+              className="max-w-full break-words border border-terminal-accent-cyan/30 px-2 py-1 text-left text-terminal-accent-cyan hover:bg-terminal-accent-cyan/10 focus-visible:outline focus-visible:outline-terminal-accent-cyan disabled:opacity-40"
+            >
+              {item} <span aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
+      )}
       {open && (
         <ul
           ref={list}
           id={`${id}-list`}
           role="listbox"
+          aria-multiselectable={multiple || undefined}
           aria-labelledby={`${id}-label`}
           className="absolute left-0 right-0 top-full z-30 !mt-1 max-h-64 overflow-y-auto overscroll-contain border border-terminal-text-light/20 dark:border-terminal-text-dark/20 bg-terminal-bg-light dark:bg-terminal-bg-dark py-1 shadow-lg shadow-black/10"
         >
-          {editable && options.length === 0 && (
+          {inputMode && options.length === 0 && (
             <li role="presentation" className="px-3 py-2 text-xs opacity-60">
-              {value
-                ? 'New category — saved with your post'
-                : 'Type a new category'}
+              {editable
+                ? value ? 'New category — saved with your post' : 'Type a new category'
+                : 'No matches found.'}
             </li>
           )}
           {options.map((option, index) => (
@@ -236,7 +269,7 @@ export default function TerminalSelect({
               key={option.value}
               id={`${id}-option-${index}`}
               role="option"
-              aria-selected={option.value === value}
+              aria-selected={isSelected(option.value)}
               onPointerMove={() => setActive(index)}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(index)}
@@ -253,7 +286,7 @@ export default function TerminalSelect({
                 aria-hidden="true"
                 className="shrink-0 text-xs text-terminal-accent-green"
               >
-                {option.value === value ? '*' : ''}
+                {isSelected(option.value) ? '*' : ''}
               </span>
             </li>
           ))}

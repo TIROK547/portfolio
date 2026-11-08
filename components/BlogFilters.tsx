@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useOptimistic, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import TerminalSelect from './TerminalSelect'
 
@@ -31,7 +31,9 @@ export default function BlogFilters({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const selectedCategories = new Set(searchParams.getAll('category'))
-  const selectedTags = new Set(searchParams.getAll('tag'))
+  const [selectedTagValues, setOptimisticTags] = useOptimistic(searchParams.getAll('tag'))
+  const [, startTransition] = useTransition()
+  const selectedTags = new Set(selectedTagValues)
 
   function navigate(next: URLSearchParams) {
     const s = next.toString()
@@ -74,6 +76,20 @@ export default function BlogFilters({
     navigate(next)
   }
 
+  function selectTags(values: string[]) {
+    cancelPending()
+    const next = new URLSearchParams(searchParams.toString())
+    next.delete('page')
+    next.delete('tag')
+    values.forEach((value) => next.append('tag', value))
+    if (q.trim()) next.set('q', q.trim())
+    else next.delete('q')
+    startTransition(() => {
+      setOptimisticTags(values)
+      navigate(next)
+    })
+  }
+
   function clearAll() {
     cancelPending()
     setQ('')
@@ -114,10 +130,17 @@ export default function BlogFilters({
           options={options(categories, selectedCategories, 'all categories')}
         />
         <TerminalSelect
-          label="tag"
-          value={[...selectedTags].join(',')}
-          onChange={(value) => select('tag', value)}
-          options={options(tags, selectedTags, 'all tags')}
+          label="tags"
+          multiple
+          searchable
+          placeholder="Search tags…"
+          value={selectedTagValues}
+          onChange={selectTags}
+          options={[
+            ...selectedTagValues.filter((value) => !tags.some((tag) => tag.value === value))
+              .map((value) => ({ value, label: value })),
+            ...tags.map((tag) => ({ value: tag.value, label: `${tag.label} (${tag.count})` })),
+          ]}
         />
       </div>
       <div className="flex justify-between gap-3 text-xs">

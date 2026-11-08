@@ -5,13 +5,13 @@ import { listProjects } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params, searchParams }: { params: Promise<{ lang: string }>; searchParams: Promise<{ stack?: string }> }) {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ lang: string }>; searchParams: Promise<{ stack?: string | string[] }> }) {
   const { lang } = await params
   const { stack } = await searchParams
   return { ...pageMetadata('Projects', lang, 'projects'), ...(stack ? { robots: { index: false, follow: true } } : {}) }
 }
 
-export default async function ProjectsPage({ params, searchParams }: { params: Promise<{ lang: string }>; searchParams: Promise<{ stack?: string }> }) {
+export default async function ProjectsPage({ params, searchParams }: { params: Promise<{ lang: string }>; searchParams: Promise<{ stack?: string | string[] }> }) {
   const { lang } = await params;
   const { stack } = await searchParams;
   const projects = listProjects({ publishedOnly: true });
@@ -32,7 +32,7 @@ export default async function ProjectsPage({ params, searchParams }: { params: P
           </p>
         </div>
 
-        <ProjectExplorer projects={projects} locale={lang} initialStack={typeof stack === 'string' ? stack : ''} key={stack ?? ''} />
+        <ProjectExplorer projects={projects} locale={lang} initialStack={Array.isArray(stack) ? stack : stack ? [stack] : []} key={JSON.stringify(stack ?? [])} />
       </div>
     </div>
   );
