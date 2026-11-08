@@ -66,20 +66,11 @@ export default async function BlogPage({
         <div className="mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4"><span aria-hidden="true" className="text-terminal-accent-red">$ </span>Articles &amp; development notes</h1>
           <div className="h-px bg-terminal-text-light/20 dark:bg-terminal-text-dark/20 mb-4" />
-          <p className="text-sm text-terminal-text-light/60 dark:text-terminal-text-dark/60">
-            showing {posts.length} {posts.length === 1 ? 'post' : 'posts'}
-            {categories.length > 0 && (
-              <> · categories: <span className="text-terminal-accent-cyan">{categories.join(', ')}</span></>
-            )}
-            {tags.length > 0 && (
-              <> · tags: <span className="text-terminal-accent-yellow">{tags.map((t) => `#${t}`).join(', ')}</span></>
-            )}
-            {q && <> · search: <span className="text-terminal-accent-green">&quot;{q}&quot;</span></>}
-          </p>
         </div>
 
         <BlogFilters
           base={base}
+          resultCount={posts.length}
           initialQuery={q ?? ''}
           categories={allCategories.map((c) => ({ value: c.slug, label: c.name, count: c.count }))}
           tags={allTags.map((t) => ({ value: t.name, label: t.name, count: t.count }))}

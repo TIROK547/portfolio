@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { getTranslations, type Locale } from '@/lib/i18n'
@@ -13,6 +13,16 @@ interface HeaderProps {
 export default function Header({ locale, alias }: HeaderProps) {
   const pathname = usePathname()
   const menu = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    function outside(event: PointerEvent) {
+      if (menu.current && !menu.current.contains(event.target as Node)) menu.current.open = false
+    }
+    document.addEventListener('pointerdown', outside)
+    return () => document.removeEventListener('pointerdown', outside)
+  }, [])
+  useEffect(() => {
+    if (menu.current) menu.current.open = false
+  }, [pathname])
   const fa = locale === 'fa'
   const { nav } = getTranslations(locale)
   const items = [
@@ -82,15 +92,12 @@ export default function Header({ locale, alias }: HeaderProps) {
             PORTFOLIO
           </span>
         </Link>
-        <nav
-          aria-label={fa ? 'ناوبری اصلی' : 'Main navigation'}
-          className="hidden items-center gap-6 text-xs md:flex"
-        >
-          {links()}
-        </nav>
         <details
           ref={menu}
-          className="group md:hidden"
+          className="group relative"
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null) && menu.current) menu.current.open = false
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Escape' && menu.current) {
               menu.current.open = false
@@ -102,22 +109,15 @@ export default function Header({ locale, alias }: HeaderProps) {
             className={`${focus} flex min-h-11 cursor-pointer list-none items-center gap-3 text-xs [&::-webkit-details-marker]:hidden`}
           >
             <span>{fa ? 'فهرست' : 'menu'}</span>
-            <span
-              aria-hidden="true"
-              className="text-terminal-accent-cyan group-open:hidden"
-            >
-              [+]
-            </span>
-            <span
-              aria-hidden="true"
-              className="hidden text-terminal-accent-cyan group-open:inline"
-            >
-              [−]
+            <span aria-hidden="true" className="relative block h-5 w-5 text-terminal-accent-cyan">
+              <span className="absolute inset-x-0 top-0.5 h-px bg-current transition-transform group-open:translate-y-2 group-open:rotate-45 motion-reduce:transition-none" />
+              <span className="absolute inset-x-0 top-2.5 h-px bg-current group-open:opacity-0" />
+              <span className="absolute inset-x-0 top-[1.125rem] h-px bg-current transition-transform group-open:-translate-y-2 group-open:-rotate-45 motion-reduce:transition-none" />
             </span>
           </summary>
           <nav
-            aria-label={fa ? 'ناوبری موبایل' : 'Mobile navigation'}
-            className="absolute inset-x-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-terminal-text-light/15 bg-terminal-bg-light px-4 py-4 text-sm dark:border-terminal-text-dark/15 dark:bg-terminal-bg-dark"
+            aria-label={fa ? 'ناوبری اصلی' : 'Main navigation'}
+            className="fixed inset-x-0 top-16 sm:absolute sm:inset-x-auto sm:end-0 sm:top-[calc(100%+0.625rem)] sm:w-72 sm:border sm:shadow-lg max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-terminal-text-light/15 bg-terminal-bg-light px-4 py-4 text-sm dark:border-terminal-text-dark/15 dark:bg-terminal-bg-dark"
           >
             <p
               aria-hidden="true"
