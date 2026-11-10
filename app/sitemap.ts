@@ -8,6 +8,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...listPosts({ publishedOnly: true, limit: 50000 }).map(post => ({
       url: `${SITE_URL}/en/blog/${encodeURIComponent(post.slug)}`, lastModified: new Date(post.updatedAt),
     })),
-    ...listProjects({ publishedOnly: true }).map(project => ({ url: `${SITE_URL}/en/projects/${project.id}` })),
+    ...listProjects({ publishedOnly: true }).map(project => ({ url: `${SITE_URL}/en/projects/${encodeURIComponent(project.slug)}` })),
   ]
 }

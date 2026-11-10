@@ -1,8 +1,8 @@
 import { contentMetadata, siteUrl, absoluteUrl, PERSON_ID, WEBSITE_ID, jsonLd, breadcrumbSchema } from '@/lib/seo'
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { getProject } from '@/lib/db'
+import { getProject, getProjectBySlug } from '@/lib/db'
 import { makeExcerpt } from '@/lib/slug'
 import Markdown from '@/components/Markdown'
 import TechIcon from '@/components/TechIcon'
@@ -11,19 +11,20 @@ import ProjectGallery from '@/components/ProjectGallery'
 export const dynamic = 'force-dynamic'
 type Props = { params: Promise<{ lang: string; id: string }> }
 function publishedProject(id: string) {
-  const project = /^\d+$/.test(id) ? getProject(Number(id)) : null
+  const project = /^\d+$/.test(id) ? getProject(Number(id)) : getProjectBySlug(id)
   if (!project || project.visibility !== 'published') notFound()
   return project
 }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, id } = await params
   const p = publishedProject(id)
-  return contentMetadata(p.name, p.summary || makeExcerpt(p.description), siteUrl(lang, 'projects', String(p.id)), p.images[0]?.url)
+  return contentMetadata(p.name, p.summary || makeExcerpt(p.description), siteUrl(lang, 'projects', p.slug), p.images[0]?.url)
 }
 export default async function ProjectPage({ params }: Props) {
   const { lang, id } = await params
   const project = publishedProject(id)
-  const url = siteUrl(lang, 'projects', String(project.id))
+  if (id !== project.slug) permanentRedirect(siteUrl(lang, 'projects', project.slug))
+  const url = siteUrl(lang, 'projects', project.slug)
   const workId = `${url}#project`
   const graph = {
     '@context': 'https://schema.org', '@graph': [

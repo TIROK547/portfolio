@@ -21,6 +21,8 @@ export interface PostSummary {
   category: { name: string; slug: string } | null
   tags: string[]
   status: PostStatus
+  featured: boolean
+  views: number
   readingMinutes: number
   createdAt: string
   updatedAt: string
@@ -35,6 +37,7 @@ export interface ProjectImage {
   kind: 'logo' | 'screenshot'
 }
 export interface Project {
+  slug: string
   id: number
   name: string
   description: string
@@ -49,6 +52,7 @@ export interface Project {
   featured: boolean
 }
 export interface PostInput {
+  featured?: boolean
   title: string
   slug?: string
   excerpt?: string
@@ -58,7 +62,7 @@ export interface PostInput {
   tags: string[]
   status: PostStatus
 }
-export type ProjectInput = Omit<Project, 'id'>
+export type ProjectInput = Omit<Project, 'id' | 'slug'>
 
 export class SlugTakenError extends Error {
   constructor() {
@@ -165,6 +169,21 @@ export function getDb(recover = true): Database.Database {
         )
       })()
     }
+    const postColumns = db.prepare('PRAGMA table_info(posts)').all() as { name: string }[]
+    for (const column of ['featured', 'views']) {
+      if (!postColumns.some(c => c.name === column)) db.exec(`ALTER TABLE posts ADD COLUMN ${column} INTEGER NOT NULL DEFAULT 0`)
+    }
+    if (!(db.prepare('PRAGMA table_info(projects)').all() as { name: string }[]).some(c => c.name === 'slug')) {
+      db.exec('ALTER TABLE projects ADD COLUMN slug TEXT')
+      db.exec('CREATE UNIQUE INDEX idx_project_slug ON projects(slug)')
+    }
+    for (const p of db.prepare('SELECT id, name FROM projects WHERE slug IS NULL').all() as { id: number; name: string }[]) {
+      const base = slugify(p.name) || 'project'
+      let slug = base
+      let suffix = 2
+      while (/^\d+$/.test(slug) || db.prepare('SELECT id FROM projects WHERE slug = ?').get(slug)) slug = `${base}-${suffix++}`
+      db.prepare('UPDATE projects SET slug = ? WHERE id = ?').run(slug, p.id)
+    }
     g.__db = db
     return db
   } catch (error) {
@@ -185,6 +204,8 @@ export function closeDb(): void {
 /* ------------------------------------------------------------------ posts */
 
 interface PostRow {
+  featured: number
+  views: number
   id: number
   slug: string
   title: string
@@ -200,7 +221,7 @@ interface PostRow {
   category_slug: string | null
 }
 
-const POST_COLS = `p.id, p.slug, p.title, p.excerpt, p.cover_image, p.status, p.reading_minutes,
+const POST_COLS = `p.featured, p.views, p.id, p.slug, p.title, p.excerpt, p.cover_image, p.status, p.reading_minutes,
   p.created_at, p.updated_at, p.published_at, c.name AS category_name, c.slug AS category_slug`
 const POST_FROM = `FROM posts p LEFT JOIN categories c ON c.id = p.category_id`
 
@@ -227,6 +248,8 @@ function hydrate(rows: PostRow[]): Post[] {
     category: r.category_name && r.category_slug ? { name: r.category_name, slug: r.category_slug } : null,
     tags: byPost.get(r.id) ?? [],
     status: r.status,
+    featured: r.featured === 1,
+    views: r.views,
     readingMinutes: r.reading_minutes,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -236,6 +259,7 @@ function hydrate(rows: PostRow[]): Post[] {
 
 export function listPosts(opts: {
   publishedOnly?: boolean
+  featuredFirst?: boolean
   tag?: string | string[]
   category?: string | string[]
   q?: string
@@ -269,7 +293,7 @@ export function listPosts(opts: {
 
   const sql = `SELECT ${POST_COLS} ${POST_FROM}
     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-    ORDER BY COALESCE(p.published_at, p.updated_at) DESC, p.id DESC LIMIT ? OFFSET ?`
+    ORDER BY ${opts.featuredFirst ? "p.featured DESC," : ""} COALESCE(p.published_at, p.updated_at) DESC, p.id DESC LIMIT ? OFFSET ?`
   const rows = getDb().prepare(sql).all(...args, opts.limit ?? 100, opts.offset ?? 0) as PostRow[]
   return hydrate(rows).map(({ content: _c, ...rest }) => rest)
 }
@@ -382,6 +406,7 @@ export function savePost(input: PostInput, id?: number): Post | null {
       postId = id
     }
 
+    if (input.featured !== undefined) db.prepare('UPDATE posts SET featured = ? WHERE id = ?').run(input.featured ? 1 : 0, postId)
     db.prepare('DELETE FROM post_tags WHERE post_id = ?').run(postId)
     for (const tag of input.tags) {
       db.prepare('INSERT OR IGNORE INTO tags (name) VALUES (?)').run(tag)
@@ -401,6 +426,7 @@ export function deletePost(id: number): boolean {
 /* --------------------------------------------------------------- projects */
 
 interface ProjectRow {
+  slug: string
   id: number
   name: string
   description: string
@@ -416,6 +442,7 @@ interface ProjectRow {
 }
 
 const toProject = (r: ProjectRow): Project => ({
+  slug: r.slug,
   id: r.id,
   name: r.name,
   description: r.description,
@@ -436,6 +463,11 @@ export function listProjects(opts: { featuredOnly?: boolean; publishedOnly?: boo
   return (getDb().prepare(`SELECT * FROM projects ${where} ORDER BY sort_order, id`).all() as ProjectRow[]).map(
     toProject,
   )
+}
+
+export function getProjectBySlug(slug: string): Project | null {
+  const r = getDb().prepare('SELECT * FROM projects WHERE slug = ?').get(slug) as ProjectRow | undefined
+  return r ? toProject(r) : null
 }
 
 export function getProject(id: number): Project | null {
@@ -461,7 +493,13 @@ export function saveProject(input: ProjectInput, id?: number): Project | null {
         'INSERT INTO projects (name, description, stack, github, status, sort_order, featured, summary, live_url, images, visibility) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
       )
       .run(...args)
-    return getProject(Number(res.lastInsertRowid))
+    const projectId = Number(res.lastInsertRowid)
+    const base = slugify(input.name) || 'project'
+    let slug = base
+    let suffix = 2
+    while (/^\d+$/.test(slug) || db.prepare('SELECT id FROM projects WHERE slug = ?').get(slug)) slug = `${base}-${suffix++}`
+    db.prepare('UPDATE projects SET slug = ? WHERE id = ?').run(slug, projectId)
+    return getProject(projectId)
   }
   const res = db
     .prepare('UPDATE projects SET name=?, description=?, stack=?, github=?, status=?, sort_order=?, featured=?, summary=?, live_url=?, images=?, visibility=? WHERE id=?')

@@ -32,7 +32,7 @@ export function llmsIndex(): string {
     '## Main pages',
     ...[['Home', ''], ['About and résumé', 'about'], ['Projects', 'projects'], ['Articles', 'blog'], ['Contact', 'contact']].map(([name, route]) => `- [${name}](${siteUrl('en', route)})`), '',
     '## Published projects',
-    ...projects.map(project => `- [${clean(project.name)}](${siteUrl('en', 'projects', String(project.id))}): ${clean(project.summary)}`), '',
+    ...projects.map(project => `- [${clean(project.name)}](${siteUrl('en', 'projects', project.slug)}): ${clean(project.summary)}`), '',
     '## Recent articles',
     ...posts.map(post => `- [${clean(post.title)}](${postUrl(post.slug)}): ${clean(post.excerpt)}`), '',
     '## Discovery', `- [Complete sitemap](${SITE_URL}/sitemap.xml)`, `- [RSS feed](${SITE_URL}/feed.xml)`, '',

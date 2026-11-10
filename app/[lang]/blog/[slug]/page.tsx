@@ -1,3 +1,4 @@
+import PostViews from '@/components/PostViews'
 import { SITE_URL, jsonLd, postUrl, PERSON_ID, WEBSITE_ID, absoluteUrl, truncateDescription } from '@/lib/seo'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -129,6 +130,8 @@ export default async function PostPage({ params }: { params: Params }) {
             <time dateTime={post.publishedAt ?? post.createdAt}>Published {formatDate(post.publishedAt ?? post.createdAt)}</time>
             {post.updatedAt.slice(0, 10) !== (post.publishedAt ?? post.createdAt).slice(0, 10) && <time dateTime={post.updatedAt}>Updated {formatDate(post.updatedAt)}</time>}
             <span>{post.readingMinutes} min read</span>
+            <PostViews slug={post.slug} initial={post.views} />
+            {post.featured && <span className="text-terminal-accent-magenta">★ featured</span>}
             {post.category && (
               <Link
                 href={`/${lang}/blog?category=${encodeURIComponent(post.category.slug)}`}

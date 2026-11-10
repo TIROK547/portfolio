@@ -43,7 +43,7 @@ export default async function BlogPage({
 
   const page = listingPage(sp.page)
   const pageSize = 12
-  const results = listPosts({ publishedOnly: true, tag: tags, category: categories, q, limit: pageSize + 1, offset: (page - 1) * pageSize })
+  const results = listPosts({ publishedOnly: true, featuredFirst: true, tag: tags, category: categories, q, limit: pageSize + 1, offset: (page - 1) * pageSize })
   const posts = results.slice(0, pageSize)
   if (page > 1 && posts.length === 0) notFound()
   const pageLink = (number: number) => {

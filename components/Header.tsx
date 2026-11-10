@@ -28,8 +28,8 @@ export default function Header({ locale, alias }: HeaderProps) {
   const items = [
     { label: nav.home, path: '' },
     { label: nav.projects, path: '/projects' },
-    { label: nav.about, path: '/about' },
     { label: fa ? 'نوشته‌ها' : 'blog', path: '/blog' },
+    { label: nav.about, path: '/about' },
     { label: nav.contact, path: '/contact' },
   ]
   const focus =

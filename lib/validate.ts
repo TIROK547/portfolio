@@ -50,6 +50,7 @@ export function parsePostInput(body: unknown): Result<PostInput> {
       category: category.trim(),
       coverImage: cover,
       status: b.status,
+      featured: b.featured === undefined ? undefined : b.featured === true,
       tags: parseTags(rawTags),
     },
   }

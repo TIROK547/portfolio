@@ -27,6 +27,7 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
     initial && initial.excerpt !== makeExcerpt(initial.content) ? initial.excerpt : '',
   )
   const [coverImage, setCoverImage] = useState(initial?.coverImage ?? '')
+  const [featured, setFeatured] = useState(initial?.featured ?? false)
   const [status, setStatus] = useState<'draft' | 'published'>(initial?.status ?? 'draft')
   const [content, setContent] = useState(initial?.content ?? '')
   const [busy, setBusy] = useState(false)
@@ -39,14 +40,14 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
 
   const coverInput = useRef<HTMLInputElement>(null)
 
-  const snapshot = JSON.stringify([title, slug, category, tagsText, excerpt, coverImage, status, content])
+  const snapshot = JSON.stringify([title, slug, category, tagsText, excerpt, coverImage, status, content, featured])
   const [saved, setSaved] = useState(snapshot)
   const dirty = snapshot !== saved
 
   const draft = useDraftRecovery(`post-draft:${initial?.id ?? 'new'}`, snapshot, (raw) => {
-    const [t, sl, cat, tags, ex, cover, st, body] = JSON.parse(raw)
+    const [t, sl, cat, tags, ex, cover, st, body, ft] = JSON.parse(raw)
     setTitle(t); setSlug(sl); setSlugTouched(true); setCategory(cat); setTagsText(tags)
-    setExcerpt(ex); setCoverImage(cover); setStatus(st); setContent(body)
+    setExcerpt(ex); setCoverImage(cover); setStatus(st); setContent(body); setFeatured(ft === true)
   })
 
   // Ctrl/Cmd+S saves. Re-bound each render so it always sees current state.
@@ -100,6 +101,7 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
       category,
       coverImage,
       status,
+      featured,
       tags: tagsText.split(/[,\s]+/).filter(Boolean),
     }
     try {
@@ -116,7 +118,7 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
       setSlug(post.slug)
       setTagsText(nextTags)
       setCategory(post.category?.name ?? '')
-      const savedSnapshot = JSON.stringify([title, post.slug, post.category?.name ?? '', nextTags, excerpt, coverImage, status, content])
+      const savedSnapshot = JSON.stringify([title, post.slug, post.category?.name ?? '', nextTags, excerpt, coverImage, status, content, featured])
       setSaved(savedSnapshot)
       draft.markSaved(savedSnapshot)
       setMessage({ kind: 'ok', text: `Saved at ${new Date().toLocaleTimeString()}` })
@@ -305,6 +307,7 @@ export default function PostEditor({ initial, categories, siteUrl }: Props) {
 
         {/* Sidebar */}
         <aside className="space-y-4">
+          <label className="flex gap-2 text-sm"><input type="checkbox" checked={featured} disabled={busy} onChange={e => setFeatured(e.target.checked)} />Featured article</label>
           <TerminalSelect admin label="status" value={status} disabled={busy}
             onChange={(value) => setStatus(value as 'draft' | 'published')}
             options={[{ value: 'draft', label: 'draft — only you' }, { value: 'published', label: 'published — on the portfolio' }]} />

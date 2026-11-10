@@ -19,6 +19,8 @@ export default function PostCard({ post, locale = 'en' }: { post: PostSummary; l
       <div className="p-4 flex flex-col gap-3 flex-1">
         <div className="text-xs text-terminal-text-light/60 dark:text-terminal-text-dark/60 flex flex-wrap gap-x-3">
           <time dateTime={post.publishedAt ?? post.createdAt}>{formatDate(post.publishedAt ?? post.createdAt)}</time>
+          <span>{post.views} views</span>
+          {post.featured && <span className="text-terminal-accent-magenta">★ featured</span>}
           <span>{post.readingMinutes} min read</span>
           {post.category && (
             <Link

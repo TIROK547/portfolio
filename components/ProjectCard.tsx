@@ -12,7 +12,7 @@ export default function ProjectCard({
   locale?: string
 }) {
   const cover = project.images[0]
-  const href = `/${locale}/projects/${project.id}`
+  const href = `/${locale}/projects/${encodeURIComponent(project.slug)}`
   return (
     <article className="border border-terminal-text-light/20 dark:border-terminal-text-dark/20 hover:border-terminal-accent-cyan/40 dark:hover:border-terminal-accent-cyan/40 transition-colors flex flex-col overflow-hidden group">
       <Link

@@ -29,7 +29,7 @@ export default async function HomePage({
   const selectedProjects = featuredProjects.length
     ? featuredProjects
     : projects.slice(0, 4)
-  const latestPosts = listPosts({ publishedOnly: true, limit: 3 })
+  const latestPosts = listPosts({ publishedOnly: true, featuredFirst: true, limit: 3 })
   const { profile, contact, stack } = getSettings()
   const age = ageFrom(profile.birthDate)
   const intro = bioParagraphs(profile.bio, age)[0] ?? ''
@@ -131,7 +131,7 @@ export default async function HomePage({
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
                         <h3 className="text-lg sm:text-xl font-semibold tracking-tight">
                           <Link
-                            href={`/${lang}/projects/${project.id}`}
+                            href={`/${lang}/projects/${encodeURIComponent(project.slug)}`}
                             className="hover:text-terminal-accent-cyan transition-colors"
                           >
                             {project.name}
@@ -172,7 +172,7 @@ export default async function HomePage({
                       </div>
                       <div className="flex flex-wrap gap-x-5 gap-y-2 mt-5 text-xs">
                         <Link
-                          href={`/${lang}/projects/${project.id}`}
+                          href={`/${lang}/projects/${encodeURIComponent(project.slug)}`}
                           className="text-terminal-accent-cyan hover:text-terminal-accent-yellow"
                         >
                           {fa ? 'جزئیات پروژه' : 'explore project'}{' '}
